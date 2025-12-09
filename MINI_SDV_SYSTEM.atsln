@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Atmel Studio Solution File, Format Version 11.00
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "MINI_SDV_SYSTEM_SUB_MCU", "MINI_SDV_SYSTEM_SUB_MCU\MINI_SDV_SYSTEM_SUB_MCU.cproj", "{CC96A5A9-D072-4F03-9315-978296CA540A}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "MINI_SDV_SYSTEM_MAIN_MCU", "MINI_SDV_SYSTEM_MAIN_MCU\MINI_SDV_SYSTEM_MAIN_MCU.cproj", "{33789728-EB11-423C-8F45-73B74D6DE5F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CC96A5A9-D072-4F03-9315-978296CA540A}.Debug|AVR.ActiveCfg = Debug|AVR
+		{CC96A5A9-D072-4F03-9315-978296CA540A}.Debug|AVR.Build.0 = Debug|AVR
+		{CC96A5A9-D072-4F03-9315-978296CA540A}.Release|AVR.ActiveCfg = Release|AVR
+		{CC96A5A9-D072-4F03-9315-978296CA540A}.Release|AVR.Build.0 = Release|AVR
+		{33789728-EB11-423C-8F45-73B74D6DE5F8}.Debug|AVR.ActiveCfg = Debug|AVR
+		{33789728-EB11-423C-8F45-73B74D6DE5F8}.Debug|AVR.Build.0 = Debug|AVR
+		{33789728-EB11-423C-8F45-73B74D6DE5F8}.Release|AVR.ActiveCfg = Release|AVR
+		{33789728-EB11-423C-8F45-73B74D6DE5F8}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
