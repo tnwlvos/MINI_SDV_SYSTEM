@@ -628,7 +628,7 @@ void motor_driection(uint8_t dir_flag){
 		}
 	  else   // BACKWARD
 	  {
-		 // A : PD0 = 0, PD1 = 1
+		 
 		 PORTD &= ~(1<<IN1_A);
      42a:	82 b3       	in	r24, 0x12	; 18
      42c:	8f 7e       	andi	r24, 0xEF	; 239
@@ -638,7 +638,7 @@ void motor_driection(uint8_t dir_flag){
      432:	80 62       	ori	r24, 0x20	; 32
      434:	82 bb       	out	0x12, r24	; 18
 
-		 // B : PD2 = 0, PD3 = 1
+	
 		 PORTD &= ~(1<<IN1_B);
      436:	82 b3       	in	r24, 0x12	; 18
      438:	8f 7b       	andi	r24, 0xBF	; 191
@@ -648,7 +648,7 @@ void motor_driection(uint8_t dir_flag){
      43e:	80 68       	ori	r24, 0x80	; 128
      440:	82 bb       	out	0x12, r24	; 18
 
-		 // C : PB0 = 0, PB1 = 1
+	
 		 PORTB &= ~(1<<IN1_C);
      442:	88 b3       	in	r24, 0x18	; 24
      444:	8e 7f       	andi	r24, 0xFE	; 254
@@ -658,7 +658,7 @@ void motor_driection(uint8_t dir_flag){
      44a:	82 60       	ori	r24, 0x02	; 2
      44c:	88 bb       	out	0x18, r24	; 24
 
-		 // D : PB2 = 0, PB3 = 1
+	
 		 PORTB &= ~(1<<IN1_D);
      44e:	88 b3       	in	r24, 0x18	; 24
      450:	8b 7f       	andi	r24, 0xFB	; 251
@@ -693,7 +693,7 @@ void motor_drive(uint8_t flag, uint8_t *speed){
      46e:	82 30       	cpi	r24, 0x02	; 2
      470:	21 f4       	brne	.+8      	; 0x47a <motor_drive+0x1e>
 		*speed=MOTOR_SPEED_decrease;
-     472:	84 eb       	ldi	r24, 0xB4	; 180
+     472:	86 e9       	ldi	r24, 0x96	; 150
 		motor_speed_set(*speed);
      474:	88 83       	st	Y, r24
      476:	9a df       	rcall	.-204    	; 0x3ac <motor_speed_set>

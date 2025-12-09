@@ -8,8 +8,12 @@
 
 #ifndef CONTROL_LOGIC_H_
 #define CONTROL_LOGIC_H_
+#include <stdint.h>
+#include "system_state.h"
 
-
+void Control_Init(void);
+void Control_UpdateFromDistance(void);
+void Control_ClearEmergency(void);
 
 
 

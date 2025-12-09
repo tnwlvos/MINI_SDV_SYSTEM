@@ -33,7 +33,7 @@
 #define BACKWARD 1
 
 #define MOTOR_SPEED_basic 200
-#define MOTOR_SPEED_decrease 180
+#define MOTOR_SPEED_decrease 150
 static volatile uint8_t speedflag_buf;
 
 
@@ -193,19 +193,19 @@ void motor_driection(uint8_t dir_flag){
 		}
 	  else   // BACKWARD
 	  {
-		 // A : PD0 = 0, PD1 = 1
+		 
 		 PORTD &= ~(1<<IN1_A);
 		 PORTD |=  (1<<IN2_A);
 
-		 // B : PD2 = 0, PD3 = 1
+	
 		 PORTD &= ~(1<<IN1_B);
 		 PORTD |=  (1<<IN2_B);
 
-		 // C : PB0 = 0, PB1 = 1
+	
 		 PORTB &= ~(1<<IN1_C);
 		 PORTB |=  (1<<IN2_C);
 
-		 // D : PB2 = 0, PB3 = 1
+	
 		 PORTB &= ~(1<<IN1_D);
 		 PORTB |=  (1<<IN2_D);
 		}

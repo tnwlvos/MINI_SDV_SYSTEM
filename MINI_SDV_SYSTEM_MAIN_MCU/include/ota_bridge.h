@@ -9,7 +9,10 @@
 #ifndef OTA_BRIDGE_H_
 #define OTA_BRIDGE_H_
 
-
+void OTA_Bridge_Init(void);
+void OTA_Bridge_Start(void);
+void OTA_Bridge_Stop(void);
+void OTA_Bridge_Process(void);
 
 
 
