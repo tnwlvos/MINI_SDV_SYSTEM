@@ -274,7 +274,7 @@ ISR(USART1_RX_vect){
 // 타이머카운터0 isr
 ISR(TIMER0_COMP_vect){
 	ti_Cnt_1ms++;
-	if(ti_Cnt_1ms>=1000){
+	if(ti_Cnt_1ms>=100){
 		measure_ready=1;
 		ti_Cnt_1ms=0;
 	}
