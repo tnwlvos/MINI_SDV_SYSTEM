@@ -13,10 +13,18 @@
 #include<stdbool.h>
 
 typedef enum{
-	MODE_AUTO =0,
+	MODE_AUTO = 0,
 	MODE_MANUAL_BTN,
 	MODE_EMERGENCY  
 } ControlMode;
+
+
+typedef enum {
+	FCW_SAFE = 0,
+	FCW_WARNING,
+	FCW_DANGER,
+	FCW_ERROR
+} fcw_states;
 
 typedef enum{
 	SPEED_UP=1, 
@@ -36,8 +44,10 @@ typedef struct{
 	MotorCmd last_motor_cmd;
 	MotorDir motor_dir;
 	uint16_t distance_cm;
+	uint16_t last_distance_cm;
+	float speed_cms;
+	fcw_states fcw_state;
 	bool distance_flag;	//새 거리값 들어왔는지 확인용 플래그
-	
 	bool pc_connect;	// PC 링크 감지용
 	bool ota_active;	//ota 진행 중 여부
 } SystemState;

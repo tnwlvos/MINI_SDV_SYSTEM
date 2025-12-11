@@ -65,24 +65,16 @@ volatile uint8_t speedD=150;
 
 volatile bool rx_complete_flag= false;
 
-//=================함수 초기화===============
-//static void usart1_init(void);
-//void send_ultra_to_sub_uart1();
-//unsigned char main_rx_speedcmd_uart1();
-//unsigned char main_rx_ota_uart1();
-//void eeprom_update_param();
-//void motor_drive();
-//
 
 
 /* ================= UART1 ================= */
-static void usart1_init(void){
+static void usart0_init(void){
 	const uint16_t ubrr = (F_CPU/(16UL*BAUD)) - 1;
-	UBRR1H = (uint8_t)(ubrr >> 8);
-	UBRR1L = (uint8_t)(ubrr & 0xFF);
-	UCSR1A = 0x00;
-	UCSR1B = (1<<RXCIE1) | (1<<RXEN1) | (1<<TXEN1);  // RX IRQ, RX/TX enable
-	UCSR1C = (1<<UCSZ11) | (1<<UCSZ10);              // 8N1
+	UBRR0H = (uint8_t)(ubrr >> 8);
+	UBRR0L = (uint8_t)(ubrr & 0xFF);
+	UCSR0A = 0x00;
+	UCSR0B = (1<<RXCIE0) | (1<<RXEN0) | (1<<TXEN0);  // RX IRQ, RX/TX enable
+	UCSR0C = (1<<UCSZ01) | (1<<UCSZ00);              // 8N1
 }
 //=================타이머카운터0==================
 void Timer0_Init(){//1ms
@@ -118,7 +110,7 @@ void motor_speed_set(uint8_t speed){
 	
 }
 //main_mcu에게 초음파 센서 값 송신(uart1)
-void send_ultra_to_sub_uart1(unsigned int *range){
+void send_ultra_to_sub_uart0(unsigned int *range){
 ///*  
 //필요 인수: 초음파 센서 값
 //반환 값: 굳이 필요 X
@@ -128,13 +120,13 @@ void send_ultra_to_sub_uart1(unsigned int *range){
 	srf_buf[1]=(*range>>8)&0xff;
 	srf_buf[0]=(*range&0xff);
 	srf_buf_idx=0;
-	UCSR1B |= (1<<UDRIE1);
+	UCSR0B |= (1<<UDRIE0);
 	
 
 }
 
-//main_mcu로 부터 속도 제어 신호 수신(uart1)
-void main_rx_speedcmd_uart1(uint8_t *motor_flag){
+//main_mcu로 부터 속도 제어 신호 수신(uart0)
+void main_rx_speedcmd_uart0(uint8_t *motor_flag){
 /*  
 필요 인수: X
 반환 값: 속도 제어 신호
@@ -251,22 +243,22 @@ void motor_drive(uint8_t flag, uint8_t *speed){
 
 
 /*===============MAIN_MCU와 송수신==========*/
-//uart1 데이터 전송 인터럽트
-ISR(USART1_UDRE_vect){
+//uart0 데이터 전송 인터럽트
+ISR(USART0_UDRE_vect){
 	//하위 부터전송
-	UDR1=srf_buf[srf_buf_idx++];
+	UDR0=srf_buf[srf_buf_idx++];
 	
 	if(srf_buf_idx>=2){
-		UCSR1B &= ~(1<<UDRIE1);
+		UCSR0B &= ~(1<<UDRIE0);
 		srf_buf_idx=0;
 	}
 	
 	
 }
 
-//uart1 데이터 수신 인터럽트
-ISR(USART1_RX_vect){
-	 speedflag_buf = UDR1;
+//uart0 데이터 수신 인터럽트
+ISR(USART0_RX_vect){
+	 speedflag_buf = UDR0;
 	 
 	 rx_complete_flag=true;
 }
@@ -291,7 +283,7 @@ int main(void)
 {
 	disable_jtag();
 	uint8_t speed=MOTOR_SPEED_basic;
-	usart1_init();
+	usart0_init();
 	LCD_Init();
 	Timer0_Init();
 	Init_TWI();	
@@ -331,7 +323,7 @@ int main(void)
 	{
 		
 		if(rx_complete_flag){
-			main_rx_speedcmd_uart1(&motor_flag);
+			main_rx_speedcmd_uart0(&motor_flag);
 			
 			rx_complete_flag=false;
 		}
@@ -359,7 +351,7 @@ int main(void)
 			LCD_Str(Message);
 			
 			startRanging(Sonar_Addr);
-			send_ultra_to_sub_uart1(&Sonar_range);
+			send_ultra_to_sub_uart0(&Sonar_range);
 			readCnt=(readCnt+1)%10;
 		}
 		

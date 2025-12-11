@@ -44,6 +44,7 @@ SUBDIRS :=  \
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
 ../src/control/control_logic.c \
+../src/control/fcw_logic.c \
 ../src/hal/hal_lcd.c \
 ../src/hal/hal_timer.c \
 ../src/hal/hal_uart.c \
@@ -62,6 +63,7 @@ ASM_SRCS +=
 
 OBJS +=  \
 src/control/control_logic.o \
+src/control/fcw_logic.o \
 src/hal/hal_lcd.o \
 src/hal/hal_timer.o \
 src/hal/hal_uart.o \
@@ -73,6 +75,7 @@ src/system_state.o
 
 OBJS_AS_ARGS +=  \
 src/control/control_logic.o \
+src/control/fcw_logic.o \
 src/hal/hal_lcd.o \
 src/hal/hal_timer.o \
 src/hal/hal_uart.o \
@@ -84,6 +87,7 @@ src/system_state.o
 
 C_DEPS +=  \
 src/control/control_logic.d \
+src/control/fcw_logic.d \
 src/hal/hal_lcd.d \
 src/hal/hal_timer.d \
 src/hal/hal_uart.d \
@@ -95,6 +99,7 @@ src/system_state.d
 
 C_DEPS_AS_ARGS +=  \
 src/control/control_logic.d \
+src/control/fcw_logic.d \
 src/hal/hal_lcd.d \
 src/hal/hal_timer.d \
 src/hal/hal_uart.d \
@@ -119,6 +124,13 @@ LINKER_SCRIPT_DEP+=
 
 # AVR32/GNU C Compiler
 src/control/control_logic.o: ../src/control/control_logic.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include" -I"../include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega128 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega128" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+src/control/fcw_logic.o: ../src/control/fcw_logic.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include" -I"../include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega128 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega128" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

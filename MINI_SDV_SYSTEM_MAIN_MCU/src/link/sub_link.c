@@ -8,13 +8,14 @@
 #include <avr/interrupt.h>
 #include "sub_link.h"
 #include "hal_uart.h"
+#include "lcd_gcc.h"
 
 static volatile uint8_t srf_buf[2];
 static volatile uint8_t srf_idx = 0;
 static volatile uint8_t tx_buf;   // 보낼 motor_cmd
 
 void SUB_Init(void){
-	HAL_USART1_Init(38400);
+	HAL_USART0_Init(38400);
 	srf_idx=0;
 }
 
@@ -23,7 +24,7 @@ void SUB_TX_motorcmd()
 	if(sdv_sys.motor_cmd != sdv_sys.last_motor_cmd)
 	{
 		tx_buf=(uint8_t)sdv_sys.motor_cmd;
-		HAL_USART1_Enable_Tx_Int();
+		HAL_USART0_Enable_Tx_Int();
 		sdv_sys.last_motor_cmd=sdv_sys.motor_cmd;
 	}
 	
@@ -44,16 +45,21 @@ void SUB_OnRxByte(uint8_t data){
 }
 void SUB_ONTxEmpty(void)
 {
-	UDR1=tx_buf;
-	HAL_USART1_Disable_Tx_Int();
+	UDR0=tx_buf;
+	HAL_USART0_Disable_Tx_Int();
 }
 
-ISR(USART1_RX_vect)
+ISR(USART0_RX_vect)
 {
-	uint8_t data= UDR1;
+	uint8_t data= UDR0;
+	
+	LCD_Pos(0,0);
+	char t[16];
+	sprintf(t, "RX:%02X   ", data);
+	LCD_Str(t);
 	SUB_OnRxByte(data);
 }
-ISR(USART1_UDRE_vect)
+ISR(USART0_UDRE_vect)
 {
 	SUB_ONTxEmpty();
 	

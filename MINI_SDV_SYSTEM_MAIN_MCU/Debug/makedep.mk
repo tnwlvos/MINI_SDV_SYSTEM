@@ -4,6 +4,8 @@
 
 src\control\control_logic.c
 
+src\control\fcw_logic.c
+
 src\hal\hal_lcd.c
 
 src\hal\hal_timer.c
