@@ -52,10 +52,10 @@ int main(void)
 		if(!sdv_sys.ota_active)
 		{
 			if(sdv_sys.distance_flag){
-				if(sdv_sys.mode==MODE_EMERGENCY && sdv_sys.distance_cm>=100){
-					Control_ClearEmergency();
-				}
-				kkkk;
+				//if(sdv_sys.mode==MODE_EMERGENCY && sdv_sys.distance_cm>=100){
+					//Control_ClearEmergency();
+				//} 
+				fcw_update();
 				sdv_sys.distance_flag=false;
 				Control_UpdateFromDistance();
 				//sub로 모터 명령 전송
@@ -67,6 +67,7 @@ int main(void)
 				LCD_Str(msg);
 				
 				PC_ProcessTx();
+				sdv_sys.last_distance_cm=sdv_sys.distance_cm;
 			
 			}		
 		}

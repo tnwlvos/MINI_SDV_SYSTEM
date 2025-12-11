@@ -16,37 +16,52 @@ void Control_Init()
 
 void Control_UpdateFromDistance(void)
 {
-	uint16_t d= sdv_sys.distance_cm;
+	fcw_states state= sdv_sys.fcw_state;
 	
-	if(d<=D_EMERGENCY)
+	if(state==FCW_DANGER)
 	{
 		sdv_sys.motor_cmd=MOTOR_STOP;
-		sdv_sys.mode=MODE_EMERGENCY;
+		//sdv_sys.mode=MODE_EMERGENCY;
 	}
-	else if(d<=D_CAUTION)
+	else if(state==FCW_WARNING)
 	{
 		sdv_sys.motor_cmd=SPEED_DOWN;
-		if(sdv_sys.mode != MODE_EMERGENCY)
-			sdv_sys.mode=MODE_AUTO;
+		//if(sdv_sys.mode != MODE_EMERGENCY)
+			//sdv_sys.mode=MODE_AUTO;
 	}
-	else
+	else if(state== FCW_SAFE)
 	{
-		if(sdv_sys.mode != MODE_EMERGENCY)
-		{
-			if(sdv_sys.last_motor_cmd == SPEED_DOWN)
-				sdv_sys.motor_cmd=SPEED_UP;
-			else if(sdv_sys.last_motor_cmd == MOTOR_STOP)
-				sdv_sys.motor_cmd=SPEED_DOWN;
-			else
-				sdv_sys.motor_cmd=SPEED_STAY;
-			sdv_sys.mode=MODE_AUTO;
+		//if(sdv_sys.mode != MODE_EMERGENCY)
+		//{
+			//if(sdv_sys.last_motor_cmd == SPEED_DOWN)
+				//sdv_sys.motor_cmd=SPEED_UP;
+			//else if(sdv_sys.last_motor_cmd == MOTOR_STOP)
+				//sdv_sys.motor_cmd=SPEED_DOWN;
+			//else
+				//sdv_sys.motor_cmd=SPEED_STAY;
+			//sdv_sys.mode=MODE_AUTO;
+		//}
+		//else
+		//{
+			//sdv_sys.motor_cmd=MOTOR_STOP;
+		//}
+		if(sdv_sys.last_motor_cmd==MOTOR_STOP){
+			sdv_sys.motor_cmd=SPEED_DOWN;
+			
+		}
+		else if(sdv_sys.last_motor_cmd==SPEED_DOWN){
+			sdv_sys.motor_cmd=SPEED_UP;
 		}
 		else
-		{
-			sdv_sys.motor_cmd=MOTOR_STOP;
-		}
+			{
+				sdv_sys.motor_cmd=SPEED_STAY;
+			}
 		
 	}
+	 else if(state == FCW_ERROR)
+	 {
+		 sdv_sys.motor_cmd = MOTOR_STOP;  // 안전 기본값
+	 }
 	
 }
 void Control_ClearEmergency(void)
