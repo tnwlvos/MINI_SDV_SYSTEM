@@ -12,7 +12,8 @@
 
 static volatile uint8_t srf_buf[2];
 static volatile uint8_t srf_idx = 0;
-static volatile uint8_t tx_buf;   // 보낼 motor_cmd
+static volatile uint8_t tx_buf[2];   // 보낼 motor_cmd
+static volatile uint8_t tx_idx = 0;
 
 void SUB_Init(void){
 	HAL_USART0_Init(38400);
@@ -21,18 +22,17 @@ void SUB_Init(void){
 
 void SUB_TX_motorcmd()
 {
-	if(sdv_sys.motor_cmd != sdv_sys.last_motor_cmd)
+	if((sdv_sys.motor_cmd != sdv_sys.last_motor_cmd) || sdv_sys.fcw_state !=FCW_SAFE)
 	{
-		tx_buf=(uint8_t)sdv_sys.motor_cmd;
+		tx_buf[0]=(uint8_t)sdv_sys.motor_cmd;
+		tx_buf[1] =(uint8_t)sdv_sys.fcw_state;
+		tx_idx=0;
 		HAL_USART0_Enable_Tx_Int();
 		sdv_sys.last_motor_cmd=sdv_sys.motor_cmd;
 	}
 	
 }
-void SUB_RX_distance(void)
-{
-	
-}
+
 void SUB_OnRxByte(uint8_t data){
 	srf_buf[srf_idx++]=data;
 	if(srf_idx>=2)
@@ -45,22 +45,21 @@ void SUB_OnRxByte(uint8_t data){
 }
 void SUB_ONTxEmpty(void)
 {
-	UDR0=tx_buf;
-	HAL_USART0_Disable_Tx_Int();
+	UDR0=tx_buf[tx_idx++];
+	if(tx_idx>=2){
+		tx_idx=0;
+		HAL_USART0_Disable_Tx_Int();	
+	}
 }
 
 ISR(USART0_RX_vect)
 {
 	uint8_t data= UDR0;
-	
-	LCD_Pos(0,0);
-	char t[16];
-	sprintf(t, "RX:%02X   ", data);
-	LCD_Str(t);
 	SUB_OnRxByte(data);
 }
 ISR(USART0_UDRE_vect)
 {
+	
 	SUB_ONTxEmpty();
 	
 }

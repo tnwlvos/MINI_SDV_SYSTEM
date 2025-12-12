@@ -15,7 +15,7 @@ void fcw_update(void);
 
 const char* fcw_state_to_string(void);
 
-int16_t fcw_get_relative_speed(void);
+void fcw_get_relative_speed(void);
 float fcw_get_ttc(void);
 
 

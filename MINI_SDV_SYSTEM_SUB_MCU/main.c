@@ -24,17 +24,26 @@
 
 
 //================파라미터 설정===================
-
+//motor_cmd_flag
 #define SPEED_UP 1
 #define SPEED_DOWN 2
 #define MOTOR_STOP 3
 #define SPEED_STAY 4
+
+//fcw_flag
+#define FCW_SAFE     0
+#define FCW_WARNING  1
+#define FCW_DANGER   2
+#define FCW_ERROR    3
+
+//motor_dir flag
 #define FORWARD 0
 #define BACKWARD 1
-
+//motor speed 
 #define MOTOR_SPEED_basic 200
 #define MOTOR_SPEED_decrease 150
-static volatile uint8_t speedflag_buf;
+
+
 
 
 #define IN1_A   PD4
@@ -50,11 +59,17 @@ static volatile uint8_t speedflag_buf;
 #define IN2_D   PB3
 
 
+#define BUZZ_PIN_BIT   0   // PORTG0
+
+#define BUZ_TICK_HZ    10000UL
+#define MS_TO_TICKS(ms) ((uint32_t)(ms) * (BUZ_TICK_HZ/1000UL))
 //==============전역변수============
 volatile uint16_t ti_Cnt_1ms;
 volatile unsigned char measure_ready;
 static volatile uint8_t srf_buf[2];
 static volatile uint8_t srf_buf_idx=0;
+volatile uint8_t rx_buf[2];
+volatile uint8_t rx_idx=0;
 
 //속도
 volatile uint8_t speedA=150;
@@ -62,10 +77,23 @@ volatile uint8_t speedB=150;
 volatile uint8_t speedC=150;
 volatile uint8_t speedD=150;
 
+//flag bufer
+static volatile uint8_t speedflag_buf;
+static volatile uint8_t fcw_state_buf;
 
 volatile bool rx_complete_flag= false;
 
+static volatile uint16_t buz_half_ticks = 0;     // 반주기 tick 수
+static volatile uint16_t buz_toggle_cnt = 0;
 
+static volatile uint8_t  buz_enable = 0;
+
+// 패턴용(Warning 삐삐 등)
+static volatile uint8_t  buz_pattern = 0;        // 0=연속, 1=패턴
+static volatile uint16_t buz_on_ticks = 0;
+static volatile uint16_t buz_off_ticks = 0;
+static volatile uint16_t buz_phase_cnt = 0;
+static volatile uint8_t  buz_phase_on = 0;
 
 /* ================= UART1 ================= */
 static void usart0_init(void){
@@ -99,6 +127,34 @@ void pwm3_init(void){
 	TCCR3B = (1<<WGM32)|(1<<CS31); // prescaler 8
 
 }
+//=============== 부저용 타이머카운터 2===============
+void Timer2_Init(){
+	   // CTC 모드
+	   TCCR2 = (1<<WGM21);
+
+	   // prescaler = 8
+	   TCCR2 |= (1<<CS21);
+
+	   // 10kHz: OCR2 = F_CPU/(presc*Hz) - 1
+	   // = 14745600/(8*10000) - 1 = 184.32 - 1 ≈ 183
+	   OCR2 = 183;
+
+	   // 비교매치 인터럽트 enable
+	   TIMSK |= (1<<OCIE2);
+}
+static uint16_t buz_calc_half_ticks(uint16_t freq_hz)
+{
+	if (freq_hz == 0) return 0;
+
+	// half_ticks = tick_hz / (2*freq)
+	uint32_t ht = (BUZ_TICK_HZ + (freq_hz)) / (2UL * freq_hz); // 반올림 느낌
+	if (ht < 1) ht = 1;
+	if (ht > 60000) ht = 60000;
+	return (uint16_t)ht;
+}
+
+
+
 
 
 
@@ -125,44 +181,36 @@ void send_ultra_to_sub_uart0(unsigned int *range){
 
 }
 
-//main_mcu로 부터 속도 제어 신호 수신(uart0)
-void main_rx_speedcmd_uart0(uint8_t *motor_flag){
+//main_mcu로 부터 속도 제어 신호, fcw 상태 수신(uart0)
+void main_rx_cmd_uart0(uint8_t *motor_flag, uint8_t *fcw_state){
 /*  
 필요 인수: X
 반환 값: 속도 제어 신호
 구현 필요 내용: main_mcu로부터 받은 제어 신호를 수신함		  
 */	
 	*motor_flag=speedflag_buf;
-
+	*fcw_state=fcw_state_buf;
 }
 
-//ota 변경 parameter값 수신(uart1)
-//unsigned char main_rx_ota_uart1(){
-///*  
-//필요 인수: X
-//반환 값: parameter값 
-//구현 필요 내용:  main_mcu로부터 받은 parameter 값을 수신함
-//*/	
-//
-//
-//}
+void Ultrasonic_filtered(unsigned int *range){
+	static uint16_t prev_dfiltered = 0;
+	if(*range == 0 || *range > 500){
+		*range = prev_dfiltered;
+		return;
+	}
+	
+	
+	if(prev_dfiltered == 0){
+		prev_dfiltered = *range;
+		return;
+	}
 
-
-//eeprom 수정(parameter 값 수정)
-//void eeprom_update_param(){
-///*  
-//필요 인수: ota신호, parameter값
-//반환 값: 굳이 필요 X
-//구현 필요 내용: ota신호와 parameter 값을 기반으로 sub_mcu의 parameter값을 변경함
-//*/	
-//
-//
-//}
-
-
-//초음파 센서값 받아오기
-
-
+	// 필터 계수 0.25(0 < alpha < 1)
+	*range=( (*range)+3*prev_dfiltered) / 4;
+	prev_dfiltered = *range;
+	
+	
+}
 
 void motor_driection(uint8_t dir_flag){
 	  if (dir_flag == FORWARD)
@@ -240,7 +288,63 @@ void motor_drive(uint8_t flag, uint8_t *speed){
 
 //펌웨어 수정(구현 가능 할 시)
 
-
+void fcw_state_to_string(uint8_t state){
+	LCD_Pos(1,0);
+	switch(state){
+		case FCW_SAFE:
+			LCD_Str("state=SAFE    ");
+			break;
+		case FCW_WARNING:
+			LCD_Str("state=WARNING ");
+			break;
+		case FCW_DANGER:
+			LCD_Str("state=DANGER  ");
+			break;
+		case FCW_ERROR:
+			LCD_Str("state=ERROR   ");
+			break;
+		default:
+			LCD_Str("state=ERROR   ");
+			break;
+	}
+}
+void buzzer_player(uint8_t state){
+	switch(state){
+		case FCW_SAFE:
+			buz_enable = 0;
+			buz_pattern = 0;
+			PORTG &= ~_BV(BUZZ_PIN_BIT);
+			
+			break;
+		case FCW_WARNING:
+			buz_enable = 1;
+			buz_pattern = 1;
+			buz_half_ticks = buz_calc_half_ticks(1000);
+			buz_on_ticks  = (uint16_t)MS_TO_TICKS(120);
+			buz_off_ticks = (uint16_t)MS_TO_TICKS(180);
+			buz_phase_on = 1;
+			buz_phase_cnt = 0;
+			break;
+		case FCW_DANGER:
+			// 1.2kHz 연속
+			buz_enable = 1;
+			buz_pattern = 0;
+			buz_half_ticks = buz_calc_half_ticks(1200);
+			break;
+			break;
+		case FCW_ERROR:
+			  buz_enable = 1;
+			  buz_pattern = 1;
+			  buz_half_ticks = buz_calc_half_ticks(2000);
+			  buz_on_ticks  = (uint16_t)MS_TO_TICKS(50);
+			  buz_off_ticks = (uint16_t)MS_TO_TICKS(50);
+			  buz_phase_on = 1;
+			  buz_phase_cnt = 0;
+			 break;
+	}
+		
+	
+}
 
 /*===============MAIN_MCU와 송수신==========*/
 //uart0 데이터 전송 인터럽트
@@ -258,9 +362,14 @@ ISR(USART0_UDRE_vect){
 
 //uart0 데이터 수신 인터럽트
 ISR(USART0_RX_vect){
-	 speedflag_buf = UDR0;
-	 
-	 rx_complete_flag=true;
+	rx_buf[rx_idx++]=UDR0;
+	if(rx_idx>=2){
+		speedflag_buf=rx_buf[0];
+		fcw_state_buf=rx_buf[1];	
+		rx_complete_flag=true;
+		rx_idx=0;
+	}
+	
 }
 
 // 타이머카운터0 isr
@@ -271,6 +380,45 @@ ISR(TIMER0_COMP_vect){
 		ti_Cnt_1ms=0;
 	}
 }
+ISR(TIMER2_COMP_vect)
+{
+	if (!buz_enable || buz_half_ticks == 0) {
+		PORTG &= ~_BV(BUZZ_PIN_BIT);
+		buz_toggle_cnt = 0;
+		return;
+	}
+
+	// 패턴이면 ON/OFF 구간 제어
+	if (buz_pattern) {
+		buz_phase_cnt++;
+		if (buz_phase_on) {
+			if (buz_phase_cnt >= buz_on_ticks) {
+				buz_phase_on = 0;
+				buz_phase_cnt = 0;
+				PORTG &= ~_BV(BUZZ_PIN_BIT);
+				buz_toggle_cnt = 0;
+				return;
+			}
+			} else {
+			if (buz_phase_cnt >= buz_off_ticks) {
+				buz_phase_on = 1;
+				buz_phase_cnt = 0;
+				} else {
+				// OFF 구간
+				PORTG &= ~_BV(BUZZ_PIN_BIT);
+				buz_toggle_cnt = 0;
+				return;
+			}
+		}
+	}
+
+	// ON 구간(연속 포함)에서 주파수 토글
+	if (++buz_toggle_cnt >= buz_half_ticks) {
+		buz_toggle_cnt = 0;
+		PORTG ^= _BV(BUZZ_PIN_BIT);
+	}
+}
+
 void disable_jtag()
 {
 	MCUCSR |= (1<<JTD);
@@ -289,6 +437,7 @@ int main(void)
 	Init_TWI();	
 	pwm1_init();
 	pwm3_init();
+	//Timer2_Init();
 	motor_speed_set(speed);
 
 	
@@ -296,13 +445,15 @@ int main(void)
 	DDRB |= (1<<PB5) | (1<<PB6) | (1<<PB0) | (1<<PB1) | (1<<PB2) | (1<<PB3);
 	DDRE |= (1<<PE3) | (1<<PE4);
 	DDRD |= (1<<PD4) | (1<<PD5) | (1<<PD6) | (1<<PD7);
+	//DDRG |= _BV(0);   // buzzer pin output
+	//PORTG &= ~_BV(0);
 	char Sonar_Addr=SRF02_ADDR_0;
 	unsigned int Sonar_range;
 	char Message[40];
-	int readCnt=0;
 	unsigned int res=0;
 	uint8_t motor_flag=0;
 	uint8_t motor_dir_flag=FORWARD;
+	uint8_t fcw_state=0;
 
 
 
@@ -323,8 +474,8 @@ int main(void)
 	{
 		
 		if(rx_complete_flag){
-			main_rx_speedcmd_uart0(&motor_flag);
-			
+			main_rx_cmd_uart0(&motor_flag, &fcw_state);
+			//buzzer_player(fcw_state);		
 			rx_complete_flag=false;
 		}
 		
@@ -334,25 +485,28 @@ int main(void)
 		if(measure_ready==1){
 			measure_ready=0;
 			
-		
+			
 			res = getRange(Sonar_Addr, &Sonar_range);
 			
 			if(res !=0){
 				LCD_Pos(0,0);
-				LCD_Str("Measured Dist=");
+				LCD_Str("Dist=");
 				LCD_Pos(1,5);
 				LCD_Str("ERR           ");
 				continue;
 			}
-			LCD_Pos(0,0);
-			LCD_Str("Measured Dist=");
-			sprintf(Message,"%01d   %03d cm",sizeof(Sonar_range) ,Sonar_range);
-			LCD_Pos(1,5);
-			LCD_Str(Message);
-			
-			startRanging(Sonar_Addr);
+			Ultrasonic_filtered(&Sonar_range);
+			//main에 현재 거리값 전송
 			send_ultra_to_sub_uart0(&Sonar_range);
-			readCnt=(readCnt+1)%10;
+			
+			//sub lcd 출력
+			LCD_Pos(0,0);
+			sprintf(Message,"Dist= %03u cm   ", (unsigned int)Sonar_range);
+			LCD_Str(Message);
+			fcw_state_to_string(fcw_state);
+		
+			//거리 재측정
+			startRanging(Sonar_Addr);
 		}
 		
 	

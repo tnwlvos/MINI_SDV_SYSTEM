@@ -61,13 +61,14 @@ int main(void)
 				//sub로 모터 명령 전송
 				SUB_TX_motorcmd();
 				LCD_Pos(0,0);
-				LCD_Str("Dist=");
-				sprintf(msg,"%3d cm",sdv_sys.distance_cm);
+				sprintf(msg,"Dist=%3d cm",(uint16_t)sdv_sys.distance_cm);
+				LCD_Str(msg);
 				LCD_Pos(1,0);
+				sprintf(msg,"ttc=%4d s",(uint16_t)sdv_sys.ttc);
 				LCD_Str(msg);
 				
 				PC_ProcessTx();
-				sdv_sys.last_distance_cm=sdv_sys.distance_cm;
+				
 			
 			}		
 		}

@@ -15,9 +15,11 @@ void SystemState_Init(void)
 	sdv_sys.last_motor_cmd=SPEED_STAY;
 	sdv_sys.motor_dir=FORWARD;
 	sdv_sys.speed_cms=0.0;
+	sdv_sys.last_speed_cms=0;
 	sdv_sys.fcw_state=FCW_SAFE;
-	sdv_sys.distance_cm=0;
-	sdv_sys.last_distance_cm=0;
+	sdv_sys.distance_cm=0.0;
+	sdv_sys.ttc= -1.0;
+	sdv_sys.last_distance_cm=0.0;
 	sdv_sys.distance_flag=false;
 	sdv_sys.pc_connect=false;
 	sdv_sys.ota_active=false;

@@ -14,8 +14,6 @@
 #include <stdint.h>
 #include <string.h>
 
-
-
 void fcw_update(void){
 	float ttc = fcw_get_ttc();
 	if(ttc < 0.0){
@@ -31,7 +29,7 @@ void fcw_update(void){
 	else{
 		sdv_sys.fcw_state = FCW_SAFE;
 	}
-	
+	sdv_sys.ttc = ttc;
 }
 
 const char* fcw_state_to_string(void){
@@ -49,20 +47,29 @@ const char* fcw_state_to_string(void){
 	}
 }
 
-int16_t fcw_get_relative_speed(void){
-	int16_t delta_distance = sdv_sys.last_distance_cm - sdv_sys.distance_cm;
-	int16_t abs_delta_distance = delta_distance >=0 ? delta_distance : -delta_distance;
-	return abs_delta_distance*10; // cm/s
+
+
+void fcw_get_relative_speed(void){
+	
+	// NOTE: distance update period is fixed at 100ms from SUB MCU
+	float dt = 0.1;  // seconds
+	float delta_distance = sdv_sys.distance_cm - sdv_sys.last_distance_cm;
+	float v_cms = delta_distance / dt; // cm/s
+	const float beta = 0.4; // 필터 계수 (0 < beta < 1)
+	sdv_sys.speed_cms= beta * v_cms + (1 - beta) *sdv_sys.last_speed_cms;
+	sdv_sys.last_speed_cms = sdv_sys.speed_cms;
+	sdv_sys.last_distance_cm = sdv_sys.distance_cm;
+	
 
 }
 
 float fcw_get_ttc(void){
-	int16_t relative_speed = fcw_get_relative_speed();
-	sdv_sys.speed_cms = (float)relative_speed; // Convert cm/ss
-	if(relative_speed == 0){
-		return 9999.0; // Infinite TTC
+	fcw_get_relative_speed();
+	// sdv_sys.speed_cms = (float)relative_speed; // Convert cm/ss
+	int v_min=2.0;
+	if (sdv_sys.speed_cms >= -v_min){
+		return 9999.0; // Object is moving away
 	}
-	
-	float ttc = (float)sdv_sys.distance_cm / relative_speed;
+	float ttc = sdv_sys.distance_cm / (-sdv_sys.speed_cms);
 	return ttc;
 }
