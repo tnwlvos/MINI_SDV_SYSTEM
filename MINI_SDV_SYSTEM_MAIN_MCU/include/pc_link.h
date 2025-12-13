@@ -14,10 +14,9 @@
 void PC_Init(void);
 void PC_ProcessRx(void);
 void PC_ProcessTx(void);
-
+void PC_SendLine(const char *msg);
 void PC_OnRxByte(uint8_t data);
 void PC_OnTxEmpty(void);
-
 
 
 

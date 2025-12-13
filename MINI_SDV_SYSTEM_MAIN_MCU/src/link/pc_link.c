@@ -10,15 +10,17 @@
 #include "pc_link.h"
 #include "hal_uart.h"
 #include "fcw_logic.h"
+#include "sub_link.h"
+#include "ota_bridge.h"
 #include <string.h>
-static char rx_line[64];
+static char rx_line[192];
 static uint8_t rx_idx = 0;
-static char tx_line[64];
+static char tx_line[128];
 static uint8_t tx_idx = 0;
 static uint8_t tx_len = 0;
 
 static volatile bool line_ready = false;
-
+static volatile uint8_t rx_overflow = 0;
 
 
 void PC_Init(void)
@@ -30,22 +32,81 @@ void PC_Init(void)
 	line_ready = false;
 }
 
+//Intel HEX형태만 ACK하기 위한 함수
+static uint8_t is_hex_char(char c){
+	return (c>='0'&&c<='9')||(c>='A'&&c<='F')||(c>='a'&&c<='f');
+}
+
+static uint8_t validate_ihex_line(const char *p){
+	if (!p || p[0] != ':') return 0;
+	size_t L = strlen(p);
+	if (L < 11) return 0;        // 최소 레코드 길이
+	if (L > 96) return 0;        // 너 시스템에서 상한(128보다 작게)
+	for (size_t i=1;i<L;i++){
+		if (!is_hex_char(p[i])) return 0;
+	}
+	return 1;
+}
+
+
 void PC_ProcessRx(void)
 {
 	if (!line_ready) return;
 
-	// TODO: "CMD:..." / "OTA:..." 등의 라인 파싱
-	// ex) CMD:PARAM=...
-	// 나중에 구현
+	if (rx_overflow) {
+		rx_overflow = 0;
+		rx_idx = 0;
+		line_ready = false;
+		PC_SendLine("OTA:NAK:RX_OVERFLOW");
+		return;
+	}
+	 // \r 제거 (윈도우 터미널 대비)
+	size_t n = strlen(rx_line);
+	if (n > 0 && rx_line[n-1] == '\r') rx_line[n-1] = '\0';
 
-	rx_idx = 0;
-	line_ready = false;
+	if (strncmp(rx_line, "OTA:BEGIN:MAIN", 14) == 0) {
+		OTA_Bridge_Begin(OTA_TARGET_MAIN);
+	}
+	else if (strncmp(rx_line, "OTA:BEGIN:SUB", 13) == 0) {
+		OTA_Bridge_Begin(OTA_TARGET_SUB);
+	}
+	else if (strncmp(rx_line, "OTA:END", 7) == 0) {
+		OTA_Bridge_End();
+	}
+	else if (strncmp(rx_line, "OTA:DATA:", 9) == 0) {
+		const char *payload = rx_line + 9;
+
+		if (!validate_ihex_line(payload)) {
+			PC_SendLine("OTA:NAK:BAD_IHEX");
+			} 
+		else {
+			OTA_Bridge_Data(payload);
+			// OTA_Bridge_OnData 안에서 ACK 보내게 하든,
+			// 여기서 ACK 보내게 하든 한 군데로 통일!
+		}
+	}
+	// (2번 프로토콜) BEGIN 이후 ':'로 시작하는 라인은 ihex 원문 ----
+	else if (sdv_sys.ota_active && rx_line[0] == ':') {
+		if (!validate_ihex_line(rx_line)) {
+			PC_SendLine("OTA:NAK:BAD_IHEX");
+			} else {
+			OTA_Bridge_Data(rx_line);
+		}
+	}
+	
+	else {
+		// 일반 커맨드 처리(나중에)
+		PC_SendLine("DBG:UNKNOWN CMD");
+	}
+	 rx_idx = 0;
+	 line_ready = false;
 }
 
 void PC_ProcessTx(void)
 {
 	// TODO: 주기적으로 STATE:MODE=...;MOTOR=...;ULTRA=...
 	// 문자열 만들어서 UART0로 전송
+	if (sdv_sys.ota_active) return;  
 	uint16_t ttc10;
 	if (tx_len != 0) return; // 전송 중이면 무시
 
@@ -72,14 +133,24 @@ void PC_ProcessTx(void)
 // ISR glue
 void PC_OnRxByte(uint8_t data)
 {
+	if (data == '\r') return; // CR 제거
+
 	if (data == '\n') {
 		rx_line[rx_idx] = '\0';
 		line_ready = true;
-		} 
-	else {
-		if (rx_idx < sizeof(rx_line)-1) {
-			rx_line[rx_idx++] = data;
-		}
+		return;
+	}
+
+	if (rx_overflow) {
+		// overflow 상태면 newline 나올 때까지 버림
+		return;
+	}
+
+	if (rx_idx < sizeof(rx_line) - 1) {
+		rx_line[rx_idx++] = data;
+		} else {
+		// 버퍼 꽉 참 → overflow 상태
+		rx_overflow = 1;
 	}
 }
 void PC_ONTxEmpty(void)
@@ -95,6 +166,16 @@ void PC_ONTxEmpty(void)
 		tx_len=0;
 	}
 }
+
+void PC_SendLine(const char *msg)
+{
+	while (tx_len != 0) { /* wait until previous send done */ }
+	tx_len = snprintf(tx_line, sizeof(tx_line), "%s\n", msg);
+	tx_idx = 0;
+	HAL_USART1_Enable_Tx_Int();
+}
+
+
 ISR(USART1_RX_vect)
 {
 	uint8_t d = UDR1;

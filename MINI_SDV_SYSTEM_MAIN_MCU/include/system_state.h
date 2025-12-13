@@ -12,6 +12,13 @@
 #include <stdint.h>
 #include<stdbool.h>
 
+typedef enum {
+	SUB_PROTO_BINARY = 0,
+	SUB_PROTO_OTA_TEXT
+} sub_proto_t;
+
+volatile sub_proto_t sub_proto_mode;
+
 typedef enum{
 	MODE_AUTO = 0,
 	MODE_MANUAL_BTN,
@@ -38,6 +45,12 @@ typedef enum{
 	BACKWARD
 }MotorDir;
 
+typedef enum {
+	OTA_IDLE = 0,
+	OTA_TARGET_MAIN,
+	OTA_TARGET_SUB
+} OtaTarget;
+
 typedef struct{
 	ControlMode mode;
 	MotorCmd motor_cmd;
@@ -52,6 +65,7 @@ typedef struct{
 	bool distance_flag;	//새 거리값 들어왔는지 확인용 플래그
 	bool pc_connect;	// PC 링크 감지용
 	bool ota_active;	//ota 진행 중 여부
+	OtaTarget ota_target; 
 
 } SystemState;
 

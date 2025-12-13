@@ -11,7 +11,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
-
+#include <util/delay.h>
 #include "system_state.h"
 #include "hal_uart.h"
 #include "lcd_gcc.h"
@@ -19,6 +19,7 @@
 #include "pc_link.h"
 #include "control_logic.h"
 #include "ota_bridge.h"
+#include "fcw_logic.h"
 #include "hal_lcd.h"
 //================파라미터 설정===================
 
@@ -35,6 +36,8 @@ void disable_jtag()
 }
 
 
+
+void OTA_Bridge_Process(void) {}
 int main(void)
 {
 	disable_jtag();
@@ -54,12 +57,21 @@ int main(void)
 	
 	while (1)
 	{
-		if(!sdv_sys.ota_active)
+		
+		PC_ProcessRx();   
+		if (sdv_sys.ota_active) {	
+			OTA_Bridge_Process();
+			_delay_ms(200);
+			continue;
+		}
+		else if(!sdv_sys.ota_active)
 		{
+			
 			if(sdv_sys.distance_flag){
 				//if(sdv_sys.mode==MODE_EMERGENCY && sdv_sys.distance_cm>=100){
 					//Control_ClearEmergency();
 				//} 
+				
 				corrected_distance();
 				fcw_update();
 				sdv_sys.distance_flag=false;

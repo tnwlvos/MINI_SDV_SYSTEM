@@ -94,6 +94,13 @@ static volatile uint8_t  buz_pattern = 0;   // 0=continuous, 1=pattern
 static volatile uint16_t buz_phase_cnt = 0;
 static volatile uint8_t  warn_step = 0;     // 0:ON1,1:OFF1,2:ON2,3:OFF_LONG
 
+
+//ota
+volatile uint8_t sub_ota_active = 0;
+
+static volatile char ota_line[128];
+static volatile uint8_t ota_idx = 0;
+static volatile uint8_t ota_line_ready = 0;
 /* ================= UART1 ================= */
 static void usart0_init(void){
 	const uint16_t ubrr = (F_CPU/(16UL*BAUD)) - 1;
@@ -357,13 +364,52 @@ ISR(USART0_UDRE_vect){
 
 //uart0 데이터 수신 인터럽트
 ISR(USART0_RX_vect){
-	rx_buf[rx_idx++]=UDR0;
-	if(rx_idx>=2){
-		speedflag_buf=rx_buf[0];
-		fcw_state_buf=rx_buf[1];	
-		rx_complete_flag=true;
-		rx_idx=0;
-	}
+	//rx_buf[rx_idx++]=UDR0;
+	//if(rx_idx>=2){
+		//speedflag_buf=rx_buf[0];
+		//fcw_state_buf=rx_buf[1];	
+		//rx_complete_flag=true;
+		//rx_idx=0;
+	//}
+	
+	 uint8_t d = UDR0;
+
+	 // ===== OTA 모드면: ASCII 라인 수신 =====
+	 if (sub_ota_active) {
+		 if (d == '\n') {
+			 ota_line[ota_idx] = '\0';
+			 ota_line_ready = 1;
+			 ota_idx = 0;
+			 } else {
+			 if (ota_idx < sizeof(ota_line)-1) ota_line[ota_idx++] = (char)d;
+		 }
+		 return;
+	 }
+
+	 // ===== 평소 모드: 2바이트 motor/fcw =====
+	 rx_buf[rx_idx++] = d;
+	 if (rx_idx >= 2) {
+		 // ★ 토큰(0xFF,0xFF) 오면 OTA 모드 진입
+		 if (rx_buf[0] == 0xFF && rx_buf[1] == 0xFF) {
+			 sub_ota_active = 1;
+			 rx_idx = 0;
+			 ota_idx = 0;
+			 ota_line_ready = 0;
+
+			 LCD_Clear();
+			 LCD_Pos(0,0);
+			 LCD_Str("OTA MODE");
+			 LCD_Pos(1,0);
+			 LCD_Str("WAIT DATA...");
+			 return;
+		 }
+
+		 speedflag_buf = rx_buf[0];
+		 fcw_state_buf = rx_buf[1];
+		 rx_complete_flag = true;
+		 rx_idx = 0;
+	 }
+	
 	
 }
 
@@ -485,6 +531,29 @@ int main(void)
 	motor_drive(MOTOR_SPEED_basic, &speed);
 	while (1)
 	{
+		
+		if (sub_ota_active)
+		{
+			if (ota_line_ready) {
+				ota_line_ready = 0;
+
+				LCD_Clear();
+				LCD_Pos(0,0);
+				LCD_Str("OTA RX:");
+
+				LCD_Pos(1,0);
+				// 16x2 LCD라 2번째 줄에 16자까지만
+				char buf16[17];
+				for (uint8_t i=0; i<16; i++) {
+					char c = ota_line[i];
+					buf16[i] = (c == '\0') ? ' ' : c;
+				}
+				buf16[16] = '\0';
+				LCD_Str(buf16);
+				continue;
+			}
+			continue;
+		}
 		
 		if(rx_complete_flag){
 			main_rx_cmd_uart0(&motor_flag, &fcw_state);

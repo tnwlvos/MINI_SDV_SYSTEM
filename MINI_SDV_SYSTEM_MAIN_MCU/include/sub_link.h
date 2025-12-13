@@ -23,7 +23,9 @@ void SUB_RX_distance(void);
 void SUB_OnRxByte(uint8_t data);
 void SUB_ONTxEmpty(void);
 
-
+void SUB_SendRawChar(uint8_t c);
+void SUB_SendLine(const char *line);
+void SUB_SendToken2(uint8_t a, uint8_t b);
 
 #endif /* SUB_LINK_H_ */
 

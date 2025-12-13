@@ -23,5 +23,6 @@ void SystemState_Init(void)
 	sdv_sys.distance_flag=false;
 	sdv_sys.pc_connect=false;
 	sdv_sys.ota_active=false;
+	sdv_sys.ota_target = OTA_IDLE;
 	
 }
