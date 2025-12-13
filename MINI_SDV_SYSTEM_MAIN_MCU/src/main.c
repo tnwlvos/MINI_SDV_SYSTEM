@@ -19,9 +19,12 @@
 #include "pc_link.h"
 #include "control_logic.h"
 #include "ota_bridge.h"
+#include "hal_lcd.h"
 //================파라미터 설정===================
 
+#define LCD_UPDATE_CNT 10
 
+static uint16_t lcd_cnt = 0;
 
 //=================함수 초기화===============
 
@@ -42,11 +45,13 @@ int main(void)
 	OTA_Bridge_Init();
 	
 	sei();
-	
-	
+	char v_msg[32];
 	char msg[32];
+	static uint8_t last_fcw_state=FCW_SAFE;
 	PC_ProcessTx();
 	_delay_ms(500);
+	uint16_t ttc10;
+	
 	while (1)
 	{
 		if(!sdv_sys.ota_active)
@@ -55,18 +60,42 @@ int main(void)
 				//if(sdv_sys.mode==MODE_EMERGENCY && sdv_sys.distance_cm>=100){
 					//Control_ClearEmergency();
 				//} 
+				corrected_distance();
 				fcw_update();
 				sdv_sys.distance_flag=false;
-				Control_UpdateFromDistance();
+				Control_UpdateFromFCW();
 				//sub로 모터 명령 전송
 				SUB_TX_motorcmd();
-				LCD_Pos(0,0);
-				sprintf(msg,"Dist=%3d cm",(uint16_t)sdv_sys.distance_cm);
-				LCD_Str(msg);
-				LCD_Pos(1,0);
-				sprintf(msg,"ttc=%4d s",(uint16_t)sdv_sys.ttc);
-				LCD_Str(msg);
 				
+				//lcd 출력===============================================
+				ttc10=sdv_sys.ttc*10;
+				//상태가 바뀌면 바로 출력
+				if(sdv_sys.fcw_state != last_fcw_state)
+				{
+					lcd_cnt=0;
+					LCD_Pos(0,0);
+					sprintf(v_msg, "Speed: %d cm/s   ",(unsigned int)sdv_sys.speed_cms);
+					LCD_Str(v_msg);
+					LCD_Pos(1,0);
+					sprintf(msg, "TTC:TTC:%2u.%1u s   ",(unsigned)(ttc10/10), (unsigned)(ttc10%10));
+					LCD_Str(msg);
+					
+				}
+				//상태 유지시 1초에 한번 출력
+				else if(lcd_cnt<LCD_UPDATE_CNT){
+					lcd_cnt++;
+					
+				}
+				else{
+					lcd_cnt=0;
+					LCD_Pos(0,0);
+					sprintf(v_msg, "Speed: %d cm/s   ",(unsigned int)sdv_sys.speed_cms);
+					LCD_Str(v_msg);
+					LCD_Pos(1,0);
+					sprintf(msg, "TTC:%2u.%1u s   ",(unsigned)(ttc10/10), (unsigned)(ttc10%10));
+					LCD_Str(msg);
+				}
+				//==============================================================================
 				PC_ProcessTx();
 				
 			

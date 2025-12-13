@@ -14,6 +14,7 @@
 void fcw_update(void);
 
 const char* fcw_state_to_string(void);
+void corrected_distance();
 
 void fcw_get_relative_speed(void);
 float fcw_get_ttc(void);

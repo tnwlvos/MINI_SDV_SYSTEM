@@ -21,7 +21,7 @@ src/main.d src/main.o: ../src/main.c \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\util\delay_basic.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\math.h \
  ../include/sub_link.h ../include/system_state.h ../include/pc_link.h \
- ../include/control_logic.h ../include/ota_bridge.h
+ ../include/control_logic.h ../include/ota_bridge.h ../include/hal_lcd.h
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\io.h:
 
@@ -76,3 +76,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\
 ../include/control_logic.h:
 
 ../include/ota_bridge.h:
+
+../include/hal_lcd.h:

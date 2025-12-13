@@ -13,6 +13,7 @@
 
 void Control_Init(void);
 void Control_UpdateFromDistance(void);
+void Control_UpdateFromFCW(void);
 void Control_ClearEmergency(void);
 
 

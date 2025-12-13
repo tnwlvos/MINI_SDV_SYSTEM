@@ -1,24 +1,46 @@
-﻿/*
- * hal_lcd.c
- *
- * Created: 2025-12-09 오전 10:56:22
- *  Author: LEESANGHUN
- */ 
+﻿///*
+ //* hal_lcd.c
+ //*
+ //* Created: 2025-12-09 오전 10:56:22
+ //*  Author: LEESANGHUN
+ //*/ 
+//#include <avr/io.h>
+//#include <avr/interrupt.h>
+//#include <stdio.h>
+//#include "hal_lcd.h"
+//#include "system_state.h"
+//#include "lcd_gcc.h"
+//#include "fcw_logic.h"
+//#define LCD_UPDATE_CNT 10
+//static float ttc_disp = 0.0f;
+//static uint16_t lcd_cnt = 0;
 //
-//// 값이 바뀐 경우에만 서브로 전송 (괜히 계속 보내지 말고)
-//if (motor_mode != last_motor_mode) {
-	//send_speed_to_sub_uart1(&motor_mode);
-	//last_motor_mode = motor_mode;
+//void LCD_Update(){
+	//char msg[32];
+	//static uint8_t last_fcw_state;
+	//if(sdv_sys.fcw_state != last_fcw_state)
+	//{
+		//lcd_cnt=0;
+		//fcw_state_to_string(sdv_sys.fcw_state);
+//
+		//LCD_Pos(1,0);
+		//sprintf(msg, "TTC:%d  ",(uint16_t)sdv_sys.ttc);
+		//LCD_Str(msg);
+		//return;
+	//}
+	//if(lcd_cnt<LCD_UPDATE_CNT){
+		//lcd_cnt++;
+		//return;
+	//}
+	//else{
+		//lcd_cnt=0;
+		//fcw_state_to_string(sdv_sys.fcw_state);
+//
+		//LCD_Pos(1,0);
+		//sprintf(msg, "TTC:%d  ",(uint16_t)sdv_sys.ttc);
+		//LCD_Str(msg);
+	//}
 //}
 //
-//if(rx_complete_flag)
-//{
-	//rx_complete_flag=false;
-	//sub_rx_ultrasonic_uart1(&distance);
-	//LCD_Pos(0,0);
-	//LCD_Str("Measured Dist=");
-	//sprintf(Message,"%01d   %03d cm",sizeof(distance) ,distance);
-	//LCD_Pos(1,5);
-	//LCD_Str(Message);
-	//
-//}
+//
+//

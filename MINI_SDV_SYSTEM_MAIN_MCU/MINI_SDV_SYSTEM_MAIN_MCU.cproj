@@ -129,6 +129,9 @@
     <Compile Include="include\fcw_logic.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="include\hal_lcd.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="include\hal_timer.h">
       <SubType>compile</SubType>
     </Compile>

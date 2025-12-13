@@ -59,7 +59,7 @@
 #define IN2_D   PB3
 
 
-#define BUZZ_PIN_BIT   0   // PORTG0
+#define BUZZ_PIN_BIT   4   // PORTG0
 
 #define BUZ_TICK_HZ    10000UL
 #define MS_TO_TICKS(ms) ((uint32_t)(ms) * (BUZ_TICK_HZ/1000UL))
@@ -81,19 +81,18 @@ volatile uint8_t speedD=150;
 static volatile uint8_t speedflag_buf;
 static volatile uint8_t fcw_state_buf;
 
+
 volatile bool rx_complete_flag= false;
 
-static volatile uint16_t buz_half_ticks = 0;     // 반주기 tick 수
+// ===== buzzer core =====
+static volatile uint16_t buz_half_ticks = 0;
 static volatile uint16_t buz_toggle_cnt = 0;
-
 static volatile uint8_t  buz_enable = 0;
 
-// 패턴용(Warning 삐삐 등)
-static volatile uint8_t  buz_pattern = 0;        // 0=연속, 1=패턴
-static volatile uint16_t buz_on_ticks = 0;
-static volatile uint16_t buz_off_ticks = 0;
+// ===== WARNING double-beep FSM =====
+static volatile uint8_t  buz_pattern = 0;   // 0=continuous, 1=pattern
 static volatile uint16_t buz_phase_cnt = 0;
-static volatile uint8_t  buz_phase_on = 0;
+static volatile uint8_t  warn_step = 0;     // 0:ON1,1:OFF1,2:ON2,3:OFF_LONG
 
 /* ================= UART1 ================= */
 static void usart0_init(void){
@@ -129,15 +128,13 @@ void pwm3_init(void){
 }
 //=============== 부저용 타이머카운터 2===============
 void Timer2_Init(){
-	   // CTC 모드
-	   TCCR2 = (1<<WGM21);
+	  
+	 // prescaler = 64
+	 TCCR2 = (1<<WGM21) | (1<<CS22);
 
-	   // prescaler = 8
-	   TCCR2 |= (1<<CS21);
-
-	   // 10kHz: OCR2 = F_CPU/(presc*Hz) - 1
-	   // = 14745600/(8*10000) - 1 = 184.32 - 1 ≈ 183
-	   OCR2 = 183;
+	 // 2kHz tick
+	 // OCR2 = F_CPU/(64*2000) - 1 ≈ 114
+	 OCR2 = 114;
 
 	   // 비교매치 인터럽트 enable
 	   TIMSK |= (1<<OCIE2);
@@ -308,43 +305,41 @@ void fcw_state_to_string(uint8_t state){
 			break;
 	}
 }
-void buzzer_player(uint8_t state){
-	switch(state){
+void buzzer_player(uint8_t state)
+{
+	switch(state)
+	{
 		case FCW_SAFE:
-			buz_enable = 0;
-			buz_pattern = 0;
-			PORTG &= ~_BV(BUZZ_PIN_BIT);
-			
-			break;
+		buz_enable = 0;
+		buz_pattern = 0;
+		PORTG &= ~_BV(BUZZ_PIN_BIT);
+		break;
+
 		case FCW_WARNING:
-			buz_enable = 1;
-			buz_pattern = 1;
-			buz_half_ticks = buz_calc_half_ticks(1000);
-			buz_on_ticks  = (uint16_t)MS_TO_TICKS(120);
-			buz_off_ticks = (uint16_t)MS_TO_TICKS(180);
-			buz_phase_on = 1;
-			buz_phase_cnt = 0;
-			break;
+		buz_enable = 1;
+		buz_pattern = 1;  // 더블 비프
+		buz_half_ticks = buz_calc_half_ticks(700*4); // 낮은 주파수
+
+		buz_phase_cnt = 0;
+		warn_step = 0;
+		break;
+
 		case FCW_DANGER:
-			// 1.2kHz 연속
-			buz_enable = 1;
-			buz_pattern = 0;
-			buz_half_ticks = buz_calc_half_ticks(1200);
-			break;
-			break;
+		buz_enable = 1;
+		buz_pattern = 0;  // 연속음
+		buz_half_ticks = buz_calc_half_ticks(2200*4); // 높은 주파수
+		break;
+
 		case FCW_ERROR:
-			  buz_enable = 1;
-			  buz_pattern = 1;
-			  buz_half_ticks = buz_calc_half_ticks(2000);
-			  buz_on_ticks  = (uint16_t)MS_TO_TICKS(50);
-			  buz_off_ticks = (uint16_t)MS_TO_TICKS(50);
-			  buz_phase_on = 1;
-			  buz_phase_cnt = 0;
-			 break;
+		buz_enable = 1;
+		buz_pattern = 1;
+		buz_half_ticks = buz_calc_half_ticks(2500*10);
+		buz_phase_cnt = 0;
+		warn_step = 0;
+		break;
 	}
-		
-	
 }
+
 
 /*===============MAIN_MCU와 송수신==========*/
 //uart0 데이터 전송 인터럽트
@@ -383,41 +378,59 @@ ISR(TIMER0_COMP_vect){
 ISR(TIMER2_COMP_vect)
 {
 	if (!buz_enable || buz_half_ticks == 0) {
-		PORTG &= ~_BV(BUZZ_PIN_BIT);
 		buz_toggle_cnt = 0;
 		return;
 	}
 
-	// 패턴이면 ON/OFF 구간 제어
-	if (buz_pattern) {
+	/* ===== WARNING : double beep FSM ===== */
+	if (buz_pattern && fcw_state_buf == FCW_WARNING)
+	{
 		buz_phase_cnt++;
-		if (buz_phase_on) {
-			if (buz_phase_cnt >= buz_on_ticks) {
-				buz_phase_on = 0;
+
+		switch (warn_step)
+		{
+			case 0: // ON1 (80ms)
+			if (buz_phase_cnt >= MS_TO_TICKS(80)) {
+				warn_step = 1;
 				buz_phase_cnt = 0;
 				PORTG &= ~_BV(BUZZ_PIN_BIT);
 				buz_toggle_cnt = 0;
-				return;
 			}
-			} else {
-			if (buz_phase_cnt >= buz_off_ticks) {
-				buz_phase_on = 1;
+			break;
+
+			case 1: // OFF1 (120ms)
+			if (buz_phase_cnt >= MS_TO_TICKS(120)) {
+				warn_step = 2;
 				buz_phase_cnt = 0;
-				} else {
-				// OFF 구간
+			}
+			return;
+
+			case 2: // ON2 (80ms)
+			if (buz_phase_cnt >= MS_TO_TICKS(80)) {
+				warn_step = 3;
+				buz_phase_cnt = 0;
 				PORTG &= ~_BV(BUZZ_PIN_BIT);
 				buz_toggle_cnt = 0;
-				return;
 			}
+			break;
+
+			case 3: // OFF_LONG (600ms)
+			if (buz_phase_cnt >= MS_TO_TICKS(600)) {
+				warn_step = 0;
+				buz_phase_cnt = 0;
+			}
+			return;
 		}
 	}
 
-	// ON 구간(연속 포함)에서 주파수 토글
+	/* ===== 주파수 토글 (WARNING ON 구간 + DANGER 연속) ===== */
 	if (++buz_toggle_cnt >= buz_half_ticks) {
 		buz_toggle_cnt = 0;
 		PORTG ^= _BV(BUZZ_PIN_BIT);
 	}
 }
+
+
 
 void disable_jtag()
 {
@@ -437,7 +450,7 @@ int main(void)
 	Init_TWI();	
 	pwm1_init();
 	pwm3_init();
-	//Timer2_Init();
+	Timer2_Init();
 	motor_speed_set(speed);
 
 	
@@ -445,8 +458,8 @@ int main(void)
 	DDRB |= (1<<PB5) | (1<<PB6) | (1<<PB0) | (1<<PB1) | (1<<PB2) | (1<<PB3);
 	DDRE |= (1<<PE3) | (1<<PE4);
 	DDRD |= (1<<PD4) | (1<<PD5) | (1<<PD6) | (1<<PD7);
-	//DDRG |= _BV(0);   // buzzer pin output
-	//PORTG &= ~_BV(0);
+	DDRG |= _BV(BUZZ_PIN_BIT);
+	PORTG &= ~_BV(BUZZ_PIN_BIT);
 	char Sonar_Addr=SRF02_ADDR_0;
 	unsigned int Sonar_range;
 	char Message[40];
@@ -468,18 +481,18 @@ int main(void)
 	
 	
 	sei();
-	motor_driection(FORWARD);
+	motor_driection(BACKWARD);
 	motor_drive(MOTOR_SPEED_basic, &speed);
 	while (1)
 	{
 		
 		if(rx_complete_flag){
 			main_rx_cmd_uart0(&motor_flag, &fcw_state);
-			//buzzer_player(fcw_state);		
+			buzzer_player(fcw_state);		
 			rx_complete_flag=false;
 		}
 		
-		motor_driection(FORWARD);
+		motor_driection(BACKWARD);
 		motor_drive(motor_flag,&speed);
 		
 		if(measure_ready==1){

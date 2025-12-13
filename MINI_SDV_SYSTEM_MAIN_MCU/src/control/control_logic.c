@@ -6,9 +6,9 @@
  */ 
 #include "control_logic.h"
 
-#define D_CAUTION   50   // cm
-#define D_EMERGENCY 20   // cm
-
+#define D_CAUTION   30   // cm
+#define D_EMERGENCY 15   // cm
+#define SAFE_CNT 15 //1.5sec
 void Control_Init()
 {
 	
@@ -16,8 +16,42 @@ void Control_Init()
 
 void Control_UpdateFromDistance(void)
 {
-	fcw_states state= sdv_sys.fcw_state;
+	uint16_t d= sdv_sys.distance_cm;
 	
+	if(d<=D_EMERGENCY)
+	{
+		sdv_sys.motor_cmd=MOTOR_STOP;		
+	}
+	else if(d<=D_CAUTION)
+	{
+		sdv_sys.motor_cmd=SPEED_DOWN;
+	}
+	else
+	{
+		
+		if(sdv_sys.last_motor_cmd == SPEED_DOWN)
+			sdv_sys.motor_cmd=SPEED_UP;
+		else if(sdv_sys.last_motor_cmd == MOTOR_STOP)
+			sdv_sys.motor_cmd=SPEED_DOWN;
+		else
+			sdv_sys.motor_cmd=SPEED_STAY;
+		
+		}
+	
+		
+	
+	
+}
+void Control_UpdateFromFCW(void)
+{
+	fcw_states state= sdv_sys.fcw_state;
+	static unsigned int safe_cnt=0;
+	static uint8_t restarted = 0; // 재출발 완료 플래그
+	if(state != FCW_SAFE){
+		safe_cnt = 0;
+		restarted = 0;
+	}
+
 	if(state==FCW_DANGER)
 	{
 		sdv_sys.motor_cmd=MOTOR_STOP;
@@ -31,31 +65,19 @@ void Control_UpdateFromDistance(void)
 	}
 	else if(state== FCW_SAFE)
 	{
-		//if(sdv_sys.mode != MODE_EMERGENCY)
-		//{
-			//if(sdv_sys.last_motor_cmd == SPEED_DOWN)
-				//sdv_sys.motor_cmd=SPEED_UP;
-			//else if(sdv_sys.last_motor_cmd == MOTOR_STOP)
-				//sdv_sys.motor_cmd=SPEED_DOWN;
-			//else
-				//sdv_sys.motor_cmd=SPEED_STAY;
-			//sdv_sys.mode=MODE_AUTO;
-		//}
-		//else
-		//{
-			//sdv_sys.motor_cmd=MOTOR_STOP;
-		//}
-		if(sdv_sys.last_motor_cmd==MOTOR_STOP){
-			sdv_sys.motor_cmd=SPEED_DOWN;
-			
-		}
-		else if(sdv_sys.last_motor_cmd==SPEED_DOWN){
-			sdv_sys.motor_cmd=SPEED_UP;
-		}
-		else
-			{
-				sdv_sys.motor_cmd=SPEED_STAY;
+		if(!restarted){
+			if(safe_cnt < SAFE_CNT){
+				safe_cnt++;
+				sdv_sys.motor_cmd = MOTOR_STOP; // 기다리는 동안 정지 유지
 			}
+			else{
+				Control_UpdateFromDistance();  // 재출발 1회
+				restarted = 1;
+			}
+		}
+		else{
+			Control_UpdateFromDistance();      // 이후는 거리 기반 주행
+		}
 		
 	}
 	 else if(state == FCW_ERROR)

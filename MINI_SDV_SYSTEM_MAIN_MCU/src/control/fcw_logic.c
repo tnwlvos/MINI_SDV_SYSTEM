@@ -13,24 +13,54 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "lcd_gcc.h"
+#define DANGER_RELEASE_CNT 8
+#define SENSOR_OFFSET_CM 11.5f
+
+void corrected_distance()
+{
+	float d = sdv_sys.distance_cm - SENSOR_OFFSET_CM;
+
+	if (d < 0.0f)
+		d = 0.0f;
+	sdv_sys.distance_cm=d;
+	
+}
+
 
 void fcw_update(void){
-	float ttc = fcw_get_ttc();
-	if(ttc < 0.0){
-		sdv_sys.fcw_state = FCW_ERROR;
-	}
-	else if(ttc < 1.0 && ttc >= 0.0){
-		sdv_sys.fcw_state = FCW_DANGER;
-	}
 	
-	else if(ttc >= 1.0 && ttc < 3.0){
-		sdv_sys.fcw_state = FCW_WARNING;
+	static uint32_t danger_cnt = 0;
+	
+	float ttc = fcw_get_ttc();
+	sdv_sys.ttc=ttc;
+	if(sdv_sys.fcw_state==FCW_DANGER){
+		if(danger_cnt > 0){			
+			danger_cnt--;
+			return;
+		}
+		//위험 상태에서 탈출 조건의 ttc는 좀더 여유를 줌
+		 if(ttc < 1.2f && ttc > 0){
+			   return;
+		   }
+		
 	}
-	else{
-		sdv_sys.fcw_state = FCW_SAFE;
+	if (ttc<1.5 &&  ttc>0)
+	{
+		sdv_sys.fcw_state=FCW_DANGER;
+		danger_cnt=DANGER_RELEASE_CNT;
+		return;
 	}
-	sdv_sys.ttc = ttc;
+	if(ttc<5.0){
+		sdv_sys.fcw_state=FCW_WARNING;
+	}
+	else
+		sdv_sys.fcw_state=FCW_SAFE;
+	sdv_sys.ttc=ttc;
+	
+	
 }
+
 
 const char* fcw_state_to_string(void){
 	switch(sdv_sys.fcw_state){
@@ -46,6 +76,7 @@ const char* fcw_state_to_string(void){
 		return "UNKNOWN";
 	}
 }
+
 
 
 
@@ -66,10 +97,11 @@ void fcw_get_relative_speed(void){
 float fcw_get_ttc(void){
 	fcw_get_relative_speed();
 	// sdv_sys.speed_cms = (float)relative_speed; // Convert cm/ss
-	int v_min=2.0;
+	int v_min=1.0;
 	if (sdv_sys.speed_cms >= -v_min){
 		return 9999.0; // Object is moving away
 	}
 	float ttc = sdv_sys.distance_cm / (-sdv_sys.speed_cms);
+	
 	return ttc;
 }

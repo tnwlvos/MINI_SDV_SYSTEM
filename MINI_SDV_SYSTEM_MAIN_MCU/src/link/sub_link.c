@@ -22,13 +22,24 @@ void SUB_Init(void){
 
 void SUB_TX_motorcmd()
 {
-	if((sdv_sys.motor_cmd != sdv_sys.last_motor_cmd) || sdv_sys.fcw_state !=FCW_SAFE)
+	static uint8_t last_fcw_state=FCW_SAFE;
+	static uint8_t init = 0;
+
+	if (!init) {
+		last_fcw_state = sdv_sys.fcw_state;
+		sdv_sys.last_motor_cmd = sdv_sys.motor_cmd;
+		init = 1;
+		
+	}
+
+	if((sdv_sys.motor_cmd != sdv_sys.last_motor_cmd) || sdv_sys.fcw_state !=last_fcw_state)
 	{
 		tx_buf[0]=(uint8_t)sdv_sys.motor_cmd;
 		tx_buf[1] =(uint8_t)sdv_sys.fcw_state;
 		tx_idx=0;
 		HAL_USART0_Enable_Tx_Int();
 		sdv_sys.last_motor_cmd=sdv_sys.motor_cmd;
+		last_fcw_state=sdv_sys.fcw_state;
 	}
 	
 }

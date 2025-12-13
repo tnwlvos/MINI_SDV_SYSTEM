@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "pc_link.h"
 #include "hal_uart.h"
+#include "fcw_logic.h"
 #include <string.h>
 static char rx_line[64];
 static uint8_t rx_idx = 0;
@@ -45,11 +46,27 @@ void PC_ProcessTx(void)
 {
 	// TODO: 주기적으로 STATE:MODE=...;MOTOR=...;ULTRA=...
 	// 문자열 만들어서 UART0로 전송
-	tx_len = sprintf(tx_line,"STATE:ULTRA=%3d;MODE=%d;MOTOR=%d\n",sdv_sys.distance_cm,sdv_sys.mode,sdv_sys.motor_cmd);
+	uint16_t ttc10;
+	if (tx_len != 0) return; // 전송 중이면 무시
+
+	
+	cli();
+	ttc10=sdv_sys.ttc*10;
+	tx_len = sprintf(tx_line,
+	"STATE:ULTRA=%3d;MODE=%d;MOTOR=%d;Speed=%d;FCW=%d;TTC=%2u.%1u\n",
+	(uint16_t)sdv_sys.distance_cm,
+	sdv_sys.mode,
+	sdv_sys.motor_cmd,
+	(int)sdv_sys.speed_cms,
+	(unsigned int)sdv_sys.fcw_state,
+	(ttc10/10),
+	(ttc10%10));
+	
+
 	tx_idx = 0;
 	HAL_USART1_Enable_Tx_Int();
-	
-	
+
+	sei();
 }
 
 // ISR glue
@@ -74,7 +91,7 @@ void PC_ONTxEmpty(void)
 	}
 	else{
 		HAL_USART1_Disable_Tx_Int();
-		memset(tx_line,0,sizeof(tx_line));
+		tx_idx=0;
 		tx_len=0;
 	}
 }
@@ -85,7 +102,7 @@ ISR(USART1_RX_vect)
 }
 ISR(USART1_UDRE_vect)
 {
-	PORTB ^= 0x01;   // 디버깅용
+	
 	PC_ONTxEmpty();
 	
 }
