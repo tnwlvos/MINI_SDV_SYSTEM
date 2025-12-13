@@ -1,5 +1,6 @@
 import serial
 import threading
+import queue
 
 class SerialManager:
     def __init__(self, port, baud, callback):
@@ -8,6 +9,7 @@ class SerialManager:
         self.callback = callback
         self.serial= None
         self.running = False
+        self.rxq = queue.Queue()   # ★ 추가
 
     def open(self):
         try:
@@ -19,25 +21,19 @@ class SerialManager:
             print(f"Error opening serial port: {e}")
     def read_loop(self):
         while self.running:
-            try:
-                raw = self.serial.readline()   # ★ raw bytes 받기
+            raw = self.serial.readline()
+            if not raw:
+                continue
+            line = raw.decode(errors="ignore").strip()
+            if not line:
+                continue
 
-                if not raw:
-                    continue        # ★ 디버깅용 출력
+            # 큐에 넣기 (OTA가 기다릴 수 있게)
+            self.rxq.put(line)
 
-                try:
-                    line = raw.decode(errors="ignore").strip()
-                    if line:
-                        if self.callback:
-                            self.callback(line)
-                    # else:
-                    #     print("[MCU] (empty line)")
-                except Exception as e:
-                    print("[DECODE ERROR]", raw, e)
-            except serial.SerialException as e:
-                print(f"[ERROR] Serial read error: {e}")
-                self.running = False
-                break
+            # 기존 콜백 유지
+            if self.callback:
+                self.callback(line)
 
     def send_line(self, msg: str):
         if self.serial:
