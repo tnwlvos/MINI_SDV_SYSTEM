@@ -22,8 +22,8 @@ class SerialManager:
             try:
                 raw = self.serial.readline()   # ★ raw bytes 받기
 
-                if raw:
-                    print("[RAW]", raw)        # ★ 디버깅용 출력
+                if not raw:
+                    continue        # ★ 디버깅용 출력
 
                 try:
                     line = raw.decode(errors="ignore").strip()
