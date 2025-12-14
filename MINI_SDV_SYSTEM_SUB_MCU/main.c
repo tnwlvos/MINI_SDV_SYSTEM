@@ -98,7 +98,7 @@ static volatile uint8_t  warn_step = 0;     // 0:ON1,1:OFF1,2:ON2,3:OFF_LONG
 //ota
 volatile uint8_t sub_ota_active = 0;
 
-static volatile char ota_line[128];
+static volatile char ota_line[256];
 static volatile uint8_t ota_idx = 0;
 static volatile uint8_t ota_line_ready = 0;
 /* ================= UART1 ================= */

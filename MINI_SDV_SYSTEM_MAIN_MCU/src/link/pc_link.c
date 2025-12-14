@@ -13,7 +13,7 @@
 #include "sub_link.h"
 #include "ota_bridge.h"
 #include <string.h>
-static char rx_line[192];
+static char rx_line[256];
 static uint8_t rx_idx = 0;
 static char tx_line[128];
 static uint8_t tx_idx = 0;
@@ -73,26 +73,15 @@ void PC_ProcessRx(void)
 	else if (strncmp(rx_line, "OTA:END", 7) == 0) {
 		OTA_Bridge_End();
 	}
-	else if (strncmp(rx_line, "OTA:DATA:", 9) == 0) {
-		const char *payload = rx_line + 9;
-
-		if (!validate_ihex_line(payload)) {
-			PC_SendLine("OTA:NAK:BAD_IHEX");
-			} 
+	else if (rx_line[0] == ':') {
+		 //  "OTA:DATA:" 없이 순수 HEX 라인
+		 if (sdv_sys.ota_active && sdv_sys.ota_target == OTA_TARGET_SUB) {
+			 OTA_Bridge_Data(rx_line);
+			 } 
 		else {
-			OTA_Bridge_Data(payload);
-			// OTA_Bridge_OnData 안에서 ACK 보내게 하든,
-			// 여기서 ACK 보내게 하든 한 군데로 통일!
-		}
-	}
-	// (2번 프로토콜) BEGIN 이후 ':'로 시작하는 라인은 ihex 원문 ----
-	else if (sdv_sys.ota_active && rx_line[0] == ':') {
-		if (!validate_ihex_line(rx_line)) {
-			PC_SendLine("OTA:NAK:BAD_IHEX");
-			} else {
-			OTA_Bridge_Data(rx_line);
-		}
-	}
+			 PC_SendLine("OTA:NAK:NOT_IN_SUB_OTA");
+		 }
+	 }
 	
 	else {
 		// 일반 커맨드 처리(나중에)

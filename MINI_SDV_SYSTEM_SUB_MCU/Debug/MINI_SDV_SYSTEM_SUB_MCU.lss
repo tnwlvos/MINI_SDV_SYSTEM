@@ -7,7 +7,7 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   1 .text         00001874  00000000  00000000  00000094  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .bss          0000009a  00800186  00800186  0000198e  2**0
+  2 .bss          0000011a  00800186  00800186  0000198e  2**0
                   ALLOC
   3 .comment      0000005c  00000000  00000000  0000198e  2**0
                   CONTENTS, READONLY
@@ -137,7 +137,7 @@ Disassembly of section .text:
       ba:	1d 92       	st	X+, r1
 
 000000bc <.do_clear_bss_start>:
-      bc:	a0 32       	cpi	r26, 0x20	; 32
+      bc:	a0 3a       	cpi	r26, 0xA0	; 160
       be:	b2 07       	cpc	r27, r18
       c0:	e1 f7       	brne	.-8      	; 0xba <.do_clear_bss_loop>
       c2:	d7 d5       	rcall	.+2990   	; 0xc72 <main>
@@ -655,14 +655,14 @@ void motor_speed_set(uint8_t speed){
      47a:	11 96       	adiw	r26, 0x01	; 1
      47c:	2c 91       	ld	r18, X
      47e:	11 97       	sbiw	r26, 0x01	; 1
-     480:	e9 e1       	ldi	r30, 0x19	; 25
+     480:	e9 e9       	ldi	r30, 0x99	; 153
      482:	f2 e0       	ldi	r31, 0x02	; 2
      484:	21 83       	std	Z+1, r18	; 0x01
 	srf_buf[0]=(*range&0xff);
      486:	8c 91       	ld	r24, X
      488:	80 83       	st	Z, r24
 	srf_buf_idx=0;
-     48a:	10 92 18 02 	sts	0x0218, r1	; 0x800218 <srf_buf_idx>
+     48a:	10 92 98 02 	sts	0x0298, r1	; 0x800298 <srf_buf_idx>
 	UCSR0B |= (1<<UDRIE0);
      48e:	8a b1       	in	r24, 0x0a	; 10
      490:	80 62       	ori	r24, 0x20	; 32
@@ -676,11 +676,11 @@ void motor_speed_set(uint8_t speed){
 구현 필요 내용: main_mcu로부터 받은 제어 신호를 수신함		  
 */	
 	*motor_flag=speedflag_buf;
-     496:	20 91 16 02 	lds	r18, 0x0216	; 0x800216 <speedflag_buf>
+     496:	20 91 96 02 	lds	r18, 0x0296	; 0x800296 <speedflag_buf>
      49a:	fc 01       	movw	r30, r24
      49c:	20 83       	st	Z, r18
 	*fcw_state=fcw_state_buf;
-     49e:	80 91 15 02 	lds	r24, 0x0215	; 0x800215 <fcw_state_buf>
+     49e:	80 91 95 02 	lds	r24, 0x0295	; 0x800295 <fcw_state_buf>
      4a2:	fb 01       	movw	r30, r22
      4a4:	80 83       	st	Z, r24
      4a6:	08 95       	ret
@@ -1416,9 +1416,9 @@ void buzzer_player(uint8_t state)
 	{
 		case FCW_SAFE:
 		buz_enable = 0;
-     7cc:	10 92 0f 02 	sts	0x020F, r1	; 0x80020f <buz_enable>
+     7cc:	10 92 8f 02 	sts	0x028F, r1	; 0x80028f <buz_enable>
 		buz_pattern = 0;
-     7d0:	10 92 0e 02 	sts	0x020E, r1	; 0x80020e <buz_pattern>
+     7d0:	10 92 8e 02 	sts	0x028E, r1	; 0x80028e <buz_pattern>
 		PORTG &= ~_BV(BUZZ_PIN_BIT);
      7d4:	e5 e6       	ldi	r30, 0x65	; 101
      7d6:	f0 e0       	ldi	r31, 0x00	; 0
@@ -1431,56 +1431,56 @@ void buzzer_player(uint8_t state)
 		case FCW_WARNING:
 		buz_enable = 1;
      7e0:	81 e0       	ldi	r24, 0x01	; 1
-     7e2:	80 93 0f 02 	sts	0x020F, r24	; 0x80020f <buz_enable>
+     7e2:	80 93 8f 02 	sts	0x028F, r24	; 0x80028f <buz_enable>
 		buz_pattern = 1;  // 더블 비프
-     7e6:	80 93 0e 02 	sts	0x020E, r24	; 0x80020e <buz_pattern>
+     7e6:	80 93 8e 02 	sts	0x028E, r24	; 0x80028e <buz_pattern>
 		buz_half_ticks = buz_calc_half_ticks(700*4); // 낮은 주파수
      7ea:	80 ef       	ldi	r24, 0xF0	; 240
      7ec:	9a e0       	ldi	r25, 0x0A	; 10
      7ee:	78 dc       	rcall	.-1808   	; 0xe0 <buz_calc_half_ticks>
-     7f0:	90 93 13 02 	sts	0x0213, r25	; 0x800213 <buz_half_ticks+0x1>
-     7f4:	80 93 12 02 	sts	0x0212, r24	; 0x800212 <buz_half_ticks>
+     7f0:	90 93 93 02 	sts	0x0293, r25	; 0x800293 <buz_half_ticks+0x1>
+     7f4:	80 93 92 02 	sts	0x0292, r24	; 0x800292 <buz_half_ticks>
 
 		buz_phase_cnt = 0;
-     7f8:	10 92 0d 02 	sts	0x020D, r1	; 0x80020d <buz_phase_cnt+0x1>
-     7fc:	10 92 0c 02 	sts	0x020C, r1	; 0x80020c <buz_phase_cnt>
+     7f8:	10 92 8d 02 	sts	0x028D, r1	; 0x80028d <buz_phase_cnt+0x1>
+     7fc:	10 92 8c 02 	sts	0x028C, r1	; 0x80028c <buz_phase_cnt>
 		warn_step = 0;
-     800:	10 92 0b 02 	sts	0x020B, r1	; 0x80020b <warn_step>
+     800:	10 92 8b 02 	sts	0x028B, r1	; 0x80028b <warn_step>
 		break;
      804:	08 95       	ret
 
 		case FCW_DANGER:
 		buz_enable = 1;
      806:	81 e0       	ldi	r24, 0x01	; 1
-     808:	80 93 0f 02 	sts	0x020F, r24	; 0x80020f <buz_enable>
+     808:	80 93 8f 02 	sts	0x028F, r24	; 0x80028f <buz_enable>
 		buz_pattern = 0;  // 연속음
-     80c:	10 92 0e 02 	sts	0x020E, r1	; 0x80020e <buz_pattern>
+     80c:	10 92 8e 02 	sts	0x028E, r1	; 0x80028e <buz_pattern>
 		buz_half_ticks = buz_calc_half_ticks(2200*4); // 높은 주파수
      810:	80 e6       	ldi	r24, 0x60	; 96
      812:	92 e2       	ldi	r25, 0x22	; 34
      814:	65 dc       	rcall	.-1846   	; 0xe0 <buz_calc_half_ticks>
-     816:	90 93 13 02 	sts	0x0213, r25	; 0x800213 <buz_half_ticks+0x1>
-     81a:	80 93 12 02 	sts	0x0212, r24	; 0x800212 <buz_half_ticks>
+     816:	90 93 93 02 	sts	0x0293, r25	; 0x800293 <buz_half_ticks+0x1>
+     81a:	80 93 92 02 	sts	0x0292, r24	; 0x800292 <buz_half_ticks>
 		break;
      81e:	08 95       	ret
 
 		case FCW_ERROR:
 		buz_enable = 1;
      820:	81 e0       	ldi	r24, 0x01	; 1
-     822:	80 93 0f 02 	sts	0x020F, r24	; 0x80020f <buz_enable>
+     822:	80 93 8f 02 	sts	0x028F, r24	; 0x80028f <buz_enable>
 		buz_pattern = 1;
-     826:	80 93 0e 02 	sts	0x020E, r24	; 0x80020e <buz_pattern>
+     826:	80 93 8e 02 	sts	0x028E, r24	; 0x80028e <buz_pattern>
 		buz_half_ticks = buz_calc_half_ticks(2500*10);
      82a:	88 ea       	ldi	r24, 0xA8	; 168
      82c:	91 e6       	ldi	r25, 0x61	; 97
      82e:	58 dc       	rcall	.-1872   	; 0xe0 <buz_calc_half_ticks>
-     830:	90 93 13 02 	sts	0x0213, r25	; 0x800213 <buz_half_ticks+0x1>
-     834:	80 93 12 02 	sts	0x0212, r24	; 0x800212 <buz_half_ticks>
+     830:	90 93 93 02 	sts	0x0293, r25	; 0x800293 <buz_half_ticks+0x1>
+     834:	80 93 92 02 	sts	0x0292, r24	; 0x800292 <buz_half_ticks>
 		buz_phase_cnt = 0;
-     838:	10 92 0d 02 	sts	0x020D, r1	; 0x80020d <buz_phase_cnt+0x1>
-     83c:	10 92 0c 02 	sts	0x020C, r1	; 0x80020c <buz_phase_cnt>
+     838:	10 92 8d 02 	sts	0x028D, r1	; 0x80028d <buz_phase_cnt+0x1>
+     83c:	10 92 8c 02 	sts	0x028C, r1	; 0x80028c <buz_phase_cnt>
 		warn_step = 0;
-     840:	10 92 0b 02 	sts	0x020B, r1	; 0x80020b <warn_step>
+     840:	10 92 8b 02 	sts	0x028B, r1	; 0x80028b <warn_step>
      844:	08 95       	ret
 
 00000846 <__vector_19>:
@@ -1502,18 +1502,18 @@ ISR(USART0_UDRE_vect){
      858:	ff 93       	push	r31
 	//하위 부터전송
 	UDR0=srf_buf[srf_buf_idx++];
-     85a:	e0 91 18 02 	lds	r30, 0x0218	; 0x800218 <srf_buf_idx>
+     85a:	e0 91 98 02 	lds	r30, 0x0298	; 0x800298 <srf_buf_idx>
      85e:	81 e0       	ldi	r24, 0x01	; 1
      860:	8e 0f       	add	r24, r30
-     862:	80 93 18 02 	sts	0x0218, r24	; 0x800218 <srf_buf_idx>
+     862:	80 93 98 02 	sts	0x0298, r24	; 0x800298 <srf_buf_idx>
      866:	f0 e0       	ldi	r31, 0x00	; 0
-     868:	e7 5e       	subi	r30, 0xE7	; 231
+     868:	e7 56       	subi	r30, 0x67	; 103
      86a:	fd 4f       	sbci	r31, 0xFD	; 253
      86c:	80 81       	ld	r24, Z
      86e:	8c b9       	out	0x0c, r24	; 12
 	
 	if(srf_buf_idx>=2){
-     870:	80 91 18 02 	lds	r24, 0x0218	; 0x800218 <srf_buf_idx>
+     870:	80 91 98 02 	lds	r24, 0x0298	; 0x800298 <srf_buf_idx>
      874:	82 30       	cpi	r24, 0x02	; 2
      876:	28 f0       	brcs	.+10     	; 0x882 <__vector_19+0x3c>
 		UCSR0B &= ~(1<<UDRIE0);
@@ -1521,7 +1521,7 @@ ISR(USART0_UDRE_vect){
      87a:	8f 7d       	andi	r24, 0xDF	; 223
      87c:	8a b9       	out	0x0a, r24	; 10
 		srf_buf_idx=0;
-     87e:	10 92 18 02 	sts	0x0218, r1	; 0x800218 <srf_buf_idx>
+     87e:	10 92 98 02 	sts	0x0298, r1	; 0x800298 <srf_buf_idx>
 	}
 	
 	
@@ -1565,7 +1565,7 @@ ISR(USART0_RX_vect){
 
 	 // ===== OTA 모드면: ASCII 라인 수신 =====
 	 if (sub_ota_active) {
-     8b4:	90 91 0a 02 	lds	r25, 0x020A	; 0x80020a <sub_ota_active>
+     8b4:	90 91 8a 02 	lds	r25, 0x028A	; 0x80028a <sub_ota_active>
      8b8:	99 23       	and	r25, r25
      8ba:	f1 f0       	breq	.+60     	; 0x8f8 <__vector_18+0x62>
 		 if (d == '\n') {
@@ -1586,8 +1586,8 @@ ISR(USART0_RX_vect){
 			 } else {
 			 if (ota_idx < sizeof(ota_line)-1) ota_line[ota_idx++] = (char)d;
      8d8:	90 91 89 01 	lds	r25, 0x0189	; 0x800189 <ota_idx>
-     8dc:	9f 37       	cpi	r25, 0x7F	; 127
-     8de:	08 f0       	brcs	.+2      	; 0x8e2 <__vector_18+0x4c>
+     8dc:	9f 3f       	cpi	r25, 0xFF	; 255
+     8de:	09 f4       	brne	.+2      	; 0x8e2 <__vector_18+0x4c>
      8e0:	d8 c0       	rjmp	.+432    	; 0xa92 <__vector_18+0x1fc>
      8e2:	e0 91 89 01 	lds	r30, 0x0189	; 0x800189 <ota_idx>
      8e6:	91 e0       	ldi	r25, 0x01	; 1
@@ -1604,34 +1604,34 @@ ISR(USART0_RX_vect){
 
 	 // ===== 평소 모드: 2바이트 motor/fcw =====
 	 rx_buf[rx_idx++] = d;
-     8f8:	e0 91 17 02 	lds	r30, 0x0217	; 0x800217 <rx_idx>
+     8f8:	e0 91 97 02 	lds	r30, 0x0297	; 0x800297 <rx_idx>
      8fc:	91 e0       	ldi	r25, 0x01	; 1
      8fe:	9e 0f       	add	r25, r30
-     900:	90 93 17 02 	sts	0x0217, r25	; 0x800217 <rx_idx>
+     900:	90 93 97 02 	sts	0x0297, r25	; 0x800297 <rx_idx>
      904:	f0 e0       	ldi	r31, 0x00	; 0
-     906:	e4 5e       	subi	r30, 0xE4	; 228
+     906:	e4 56       	subi	r30, 0x64	; 100
      908:	fd 4f       	sbci	r31, 0xFD	; 253
      90a:	80 83       	st	Z, r24
 	 if (rx_idx >= 2) {
-     90c:	80 91 17 02 	lds	r24, 0x0217	; 0x800217 <rx_idx>
+     90c:	80 91 97 02 	lds	r24, 0x0297	; 0x800297 <rx_idx>
      910:	82 30       	cpi	r24, 0x02	; 2
      912:	08 f4       	brcc	.+2      	; 0x916 <__vector_18+0x80>
      914:	be c0       	rjmp	.+380    	; 0xa92 <__vector_18+0x1fc>
 		 // ★ 토큰(0xFF,0xFF) 오면 OTA 모드 진입
 		 if (rx_buf[0] == 0xFF && rx_buf[1] == 0xFF) {
-     916:	80 91 1c 02 	lds	r24, 0x021C	; 0x80021c <rx_buf>
+     916:	80 91 9c 02 	lds	r24, 0x029C	; 0x80029c <rx_buf>
      91a:	8f 3f       	cpi	r24, 0xFF	; 255
      91c:	09 f0       	breq	.+2      	; 0x920 <__vector_18+0x8a>
      91e:	ac c0       	rjmp	.+344    	; 0xa78 <__vector_18+0x1e2>
-     920:	80 91 1d 02 	lds	r24, 0x021D	; 0x80021d <rx_buf+0x1>
+     920:	80 91 9d 02 	lds	r24, 0x029D	; 0x80029d <rx_buf+0x1>
      924:	8f 3f       	cpi	r24, 0xFF	; 255
      926:	09 f0       	breq	.+2      	; 0x92a <__vector_18+0x94>
      928:	a7 c0       	rjmp	.+334    	; 0xa78 <__vector_18+0x1e2>
 			 sub_ota_active = 1;
      92a:	91 e0       	ldi	r25, 0x01	; 1
-     92c:	90 93 0a 02 	sts	0x020A, r25	; 0x80020a <sub_ota_active>
+     92c:	90 93 8a 02 	sts	0x028A, r25	; 0x80028a <sub_ota_active>
 			 rx_idx = 0;
-     930:	10 92 17 02 	sts	0x0217, r1	; 0x800217 <rx_idx>
+     930:	10 92 97 02 	sts	0x0297, r1	; 0x800297 <rx_idx>
 			 ota_idx = 0;
      934:	10 92 89 01 	sts	0x0189, r1	; 0x800189 <ota_idx>
 			 ota_line_ready = 0;
@@ -1937,18 +1937,18 @@ static inline void LCD_Str(const char *str)
 		 }
 
 		 speedflag_buf = rx_buf[0];
-     a78:	ec e1       	ldi	r30, 0x1C	; 28
+     a78:	ec e9       	ldi	r30, 0x9C	; 156
      a7a:	f2 e0       	ldi	r31, 0x02	; 2
      a7c:	80 81       	ld	r24, Z
-     a7e:	80 93 16 02 	sts	0x0216, r24	; 0x800216 <speedflag_buf>
+     a7e:	80 93 96 02 	sts	0x0296, r24	; 0x800296 <speedflag_buf>
 		 fcw_state_buf = rx_buf[1];
      a82:	81 81       	ldd	r24, Z+1	; 0x01
-     a84:	80 93 15 02 	sts	0x0215, r24	; 0x800215 <fcw_state_buf>
+     a84:	80 93 95 02 	sts	0x0295, r24	; 0x800295 <fcw_state_buf>
 		 rx_complete_flag = true;
      a88:	81 e0       	ldi	r24, 0x01	; 1
-     a8a:	80 93 14 02 	sts	0x0214, r24	; 0x800214 <rx_complete_flag>
+     a8a:	80 93 94 02 	sts	0x0294, r24	; 0x800294 <rx_complete_flag>
 		 rx_idx = 0;
-     a8e:	10 92 17 02 	sts	0x0217, r1	; 0x800217 <rx_idx>
+     a8e:	10 92 97 02 	sts	0x0297, r1	; 0x800297 <rx_idx>
 	 }
 	
 	
@@ -1980,23 +1980,23 @@ ISR(TIMER0_COMP_vect){
      ab8:	8f 93       	push	r24
      aba:	9f 93       	push	r25
 	ti_Cnt_1ms++;
-     abc:	80 91 1e 02 	lds	r24, 0x021E	; 0x80021e <ti_Cnt_1ms>
-     ac0:	90 91 1f 02 	lds	r25, 0x021F	; 0x80021f <ti_Cnt_1ms+0x1>
+     abc:	80 91 9e 02 	lds	r24, 0x029E	; 0x80029e <ti_Cnt_1ms>
+     ac0:	90 91 9f 02 	lds	r25, 0x029F	; 0x80029f <ti_Cnt_1ms+0x1>
      ac4:	01 96       	adiw	r24, 0x01	; 1
-     ac6:	90 93 1f 02 	sts	0x021F, r25	; 0x80021f <ti_Cnt_1ms+0x1>
-     aca:	80 93 1e 02 	sts	0x021E, r24	; 0x80021e <ti_Cnt_1ms>
+     ac6:	90 93 9f 02 	sts	0x029F, r25	; 0x80029f <ti_Cnt_1ms+0x1>
+     aca:	80 93 9e 02 	sts	0x029E, r24	; 0x80029e <ti_Cnt_1ms>
 	if(ti_Cnt_1ms>=100){
-     ace:	80 91 1e 02 	lds	r24, 0x021E	; 0x80021e <ti_Cnt_1ms>
-     ad2:	90 91 1f 02 	lds	r25, 0x021F	; 0x80021f <ti_Cnt_1ms+0x1>
+     ace:	80 91 9e 02 	lds	r24, 0x029E	; 0x80029e <ti_Cnt_1ms>
+     ad2:	90 91 9f 02 	lds	r25, 0x029F	; 0x80029f <ti_Cnt_1ms+0x1>
      ad6:	84 36       	cpi	r24, 0x64	; 100
      ad8:	91 05       	cpc	r25, r1
      ada:	38 f0       	brcs	.+14     	; 0xaea <__vector_15+0x3c>
 		measure_ready=1;
      adc:	81 e0       	ldi	r24, 0x01	; 1
-     ade:	80 93 1b 02 	sts	0x021B, r24	; 0x80021b <measure_ready>
+     ade:	80 93 9b 02 	sts	0x029B, r24	; 0x80029b <measure_ready>
 		ti_Cnt_1ms=0;
-     ae2:	10 92 1f 02 	sts	0x021F, r1	; 0x80021f <ti_Cnt_1ms+0x1>
-     ae6:	10 92 1e 02 	sts	0x021E, r1	; 0x80021e <ti_Cnt_1ms>
+     ae2:	10 92 9f 02 	sts	0x029F, r1	; 0x80029f <ti_Cnt_1ms+0x1>
+     ae6:	10 92 9e 02 	sts	0x029E, r1	; 0x80029e <ti_Cnt_1ms>
 	}
 }
      aea:	9f 91       	pop	r25
@@ -2024,40 +2024,40 @@ ISR(TIMER2_COMP_vect)
      b0e:	ef 93       	push	r30
      b10:	ff 93       	push	r31
 	if (!buz_enable || buz_half_ticks == 0) {
-     b12:	80 91 0f 02 	lds	r24, 0x020F	; 0x80020f <buz_enable>
+     b12:	80 91 8f 02 	lds	r24, 0x028F	; 0x80028f <buz_enable>
      b16:	88 23       	and	r24, r24
      b18:	31 f0       	breq	.+12     	; 0xb26 <__vector_9+0x2e>
-     b1a:	80 91 12 02 	lds	r24, 0x0212	; 0x800212 <buz_half_ticks>
-     b1e:	90 91 13 02 	lds	r25, 0x0213	; 0x800213 <buz_half_ticks+0x1>
+     b1a:	80 91 92 02 	lds	r24, 0x0292	; 0x800292 <buz_half_ticks>
+     b1e:	90 91 93 02 	lds	r25, 0x0293	; 0x800293 <buz_half_ticks+0x1>
      b22:	89 2b       	or	r24, r25
      b24:	29 f4       	brne	.+10     	; 0xb30 <__vector_9+0x38>
 		buz_toggle_cnt = 0;
-     b26:	10 92 11 02 	sts	0x0211, r1	; 0x800211 <buz_toggle_cnt+0x1>
-     b2a:	10 92 10 02 	sts	0x0210, r1	; 0x800210 <buz_toggle_cnt>
+     b26:	10 92 91 02 	sts	0x0291, r1	; 0x800291 <buz_toggle_cnt+0x1>
+     b2a:	10 92 90 02 	sts	0x0290, r1	; 0x800290 <buz_toggle_cnt>
 		return;
      b2e:	87 c0       	rjmp	.+270    	; 0xc3e <__vector_9+0x146>
 	}
 
 	/* ===== WARNING : double beep FSM ===== */
 	if (buz_pattern && fcw_state_buf == FCW_WARNING)
-     b30:	80 91 0e 02 	lds	r24, 0x020E	; 0x80020e <buz_pattern>
+     b30:	80 91 8e 02 	lds	r24, 0x028E	; 0x80028e <buz_pattern>
      b34:	88 23       	and	r24, r24
      b36:	09 f4       	brne	.+2      	; 0xb3a <__vector_9+0x42>
      b38:	68 c0       	rjmp	.+208    	; 0xc0a <__vector_9+0x112>
-     b3a:	80 91 15 02 	lds	r24, 0x0215	; 0x800215 <fcw_state_buf>
+     b3a:	80 91 95 02 	lds	r24, 0x0295	; 0x800295 <fcw_state_buf>
      b3e:	81 30       	cpi	r24, 0x01	; 1
      b40:	09 f0       	breq	.+2      	; 0xb44 <__vector_9+0x4c>
      b42:	63 c0       	rjmp	.+198    	; 0xc0a <__vector_9+0x112>
 	{
 		buz_phase_cnt++;
-     b44:	80 91 0c 02 	lds	r24, 0x020C	; 0x80020c <buz_phase_cnt>
-     b48:	90 91 0d 02 	lds	r25, 0x020D	; 0x80020d <buz_phase_cnt+0x1>
+     b44:	80 91 8c 02 	lds	r24, 0x028C	; 0x80028c <buz_phase_cnt>
+     b48:	90 91 8d 02 	lds	r25, 0x028D	; 0x80028d <buz_phase_cnt+0x1>
      b4c:	01 96       	adiw	r24, 0x01	; 1
-     b4e:	90 93 0d 02 	sts	0x020D, r25	; 0x80020d <buz_phase_cnt+0x1>
-     b52:	80 93 0c 02 	sts	0x020C, r24	; 0x80020c <buz_phase_cnt>
+     b4e:	90 93 8d 02 	sts	0x028D, r25	; 0x80028d <buz_phase_cnt+0x1>
+     b52:	80 93 8c 02 	sts	0x028C, r24	; 0x80028c <buz_phase_cnt>
 
 		switch (warn_step)
-     b56:	80 91 0b 02 	lds	r24, 0x020B	; 0x80020b <warn_step>
+     b56:	80 91 8b 02 	lds	r24, 0x028B	; 0x80028b <warn_step>
      b5a:	81 30       	cpi	r24, 0x01	; 1
      b5c:	01 f1       	breq	.+64     	; 0xb9e <__vector_9+0xa6>
      b5e:	30 f0       	brcs	.+12     	; 0xb6c <__vector_9+0x74>
@@ -2070,18 +2070,18 @@ ISR(TIMER2_COMP_vect)
 		{
 			case 0: // ON1 (80ms)
 			if (buz_phase_cnt >= MS_TO_TICKS(80)) {
-     b6c:	80 91 0c 02 	lds	r24, 0x020C	; 0x80020c <buz_phase_cnt>
-     b70:	90 91 0d 02 	lds	r25, 0x020D	; 0x80020d <buz_phase_cnt+0x1>
+     b6c:	80 91 8c 02 	lds	r24, 0x028C	; 0x80028c <buz_phase_cnt>
+     b70:	90 91 8d 02 	lds	r25, 0x028D	; 0x80028d <buz_phase_cnt+0x1>
      b74:	80 32       	cpi	r24, 0x20	; 32
      b76:	93 40       	sbci	r25, 0x03	; 3
      b78:	08 f4       	brcc	.+2      	; 0xb7c <__vector_9+0x84>
      b7a:	47 c0       	rjmp	.+142    	; 0xc0a <__vector_9+0x112>
 				warn_step = 1;
      b7c:	81 e0       	ldi	r24, 0x01	; 1
-     b7e:	80 93 0b 02 	sts	0x020B, r24	; 0x80020b <warn_step>
+     b7e:	80 93 8b 02 	sts	0x028B, r24	; 0x80028b <warn_step>
 				buz_phase_cnt = 0;
-     b82:	10 92 0d 02 	sts	0x020D, r1	; 0x80020d <buz_phase_cnt+0x1>
-     b86:	10 92 0c 02 	sts	0x020C, r1	; 0x80020c <buz_phase_cnt>
+     b82:	10 92 8d 02 	sts	0x028D, r1	; 0x80028d <buz_phase_cnt+0x1>
+     b86:	10 92 8c 02 	sts	0x028C, r1	; 0x80028c <buz_phase_cnt>
 				PORTG &= ~_BV(BUZZ_PIN_BIT);
      b8a:	e5 e6       	ldi	r30, 0x65	; 101
      b8c:	f0 e0       	ldi	r31, 0x00	; 0
@@ -2089,43 +2089,43 @@ ISR(TIMER2_COMP_vect)
      b90:	8f 7e       	andi	r24, 0xEF	; 239
      b92:	80 83       	st	Z, r24
 				buz_toggle_cnt = 0;
-     b94:	10 92 11 02 	sts	0x0211, r1	; 0x800211 <buz_toggle_cnt+0x1>
-     b98:	10 92 10 02 	sts	0x0210, r1	; 0x800210 <buz_toggle_cnt>
+     b94:	10 92 91 02 	sts	0x0291, r1	; 0x800291 <buz_toggle_cnt+0x1>
+     b98:	10 92 90 02 	sts	0x0290, r1	; 0x800290 <buz_toggle_cnt>
      b9c:	36 c0       	rjmp	.+108    	; 0xc0a <__vector_9+0x112>
 			}
 			break;
 
 			case 1: // OFF1 (120ms)
 			if (buz_phase_cnt >= MS_TO_TICKS(120)) {
-     b9e:	80 91 0c 02 	lds	r24, 0x020C	; 0x80020c <buz_phase_cnt>
-     ba2:	90 91 0d 02 	lds	r25, 0x020D	; 0x80020d <buz_phase_cnt+0x1>
+     b9e:	80 91 8c 02 	lds	r24, 0x028C	; 0x80028c <buz_phase_cnt>
+     ba2:	90 91 8d 02 	lds	r25, 0x028D	; 0x80028d <buz_phase_cnt+0x1>
      ba6:	80 3b       	cpi	r24, 0xB0	; 176
      ba8:	94 40       	sbci	r25, 0x04	; 4
      baa:	08 f4       	brcc	.+2      	; 0xbae <__vector_9+0xb6>
      bac:	48 c0       	rjmp	.+144    	; 0xc3e <__vector_9+0x146>
 				warn_step = 2;
      bae:	82 e0       	ldi	r24, 0x02	; 2
-     bb0:	80 93 0b 02 	sts	0x020B, r24	; 0x80020b <warn_step>
+     bb0:	80 93 8b 02 	sts	0x028B, r24	; 0x80028b <warn_step>
 				buz_phase_cnt = 0;
-     bb4:	10 92 0d 02 	sts	0x020D, r1	; 0x80020d <buz_phase_cnt+0x1>
-     bb8:	10 92 0c 02 	sts	0x020C, r1	; 0x80020c <buz_phase_cnt>
+     bb4:	10 92 8d 02 	sts	0x028D, r1	; 0x80028d <buz_phase_cnt+0x1>
+     bb8:	10 92 8c 02 	sts	0x028C, r1	; 0x80028c <buz_phase_cnt>
      bbc:	40 c0       	rjmp	.+128    	; 0xc3e <__vector_9+0x146>
 			}
 			return;
 
 			case 2: // ON2 (80ms)
 			if (buz_phase_cnt >= MS_TO_TICKS(80)) {
-     bbe:	80 91 0c 02 	lds	r24, 0x020C	; 0x80020c <buz_phase_cnt>
-     bc2:	90 91 0d 02 	lds	r25, 0x020D	; 0x80020d <buz_phase_cnt+0x1>
+     bbe:	80 91 8c 02 	lds	r24, 0x028C	; 0x80028c <buz_phase_cnt>
+     bc2:	90 91 8d 02 	lds	r25, 0x028D	; 0x80028d <buz_phase_cnt+0x1>
      bc6:	80 32       	cpi	r24, 0x20	; 32
      bc8:	93 40       	sbci	r25, 0x03	; 3
      bca:	f8 f0       	brcs	.+62     	; 0xc0a <__vector_9+0x112>
 				warn_step = 3;
      bcc:	83 e0       	ldi	r24, 0x03	; 3
-     bce:	80 93 0b 02 	sts	0x020B, r24	; 0x80020b <warn_step>
+     bce:	80 93 8b 02 	sts	0x028B, r24	; 0x80028b <warn_step>
 				buz_phase_cnt = 0;
-     bd2:	10 92 0d 02 	sts	0x020D, r1	; 0x80020d <buz_phase_cnt+0x1>
-     bd6:	10 92 0c 02 	sts	0x020C, r1	; 0x80020c <buz_phase_cnt>
+     bd2:	10 92 8d 02 	sts	0x028D, r1	; 0x80028d <buz_phase_cnt+0x1>
+     bd6:	10 92 8c 02 	sts	0x028C, r1	; 0x80028c <buz_phase_cnt>
 				PORTG &= ~_BV(BUZZ_PIN_BIT);
      bda:	e5 e6       	ldi	r30, 0x65	; 101
      bdc:	f0 e0       	ldi	r31, 0x00	; 0
@@ -2133,24 +2133,24 @@ ISR(TIMER2_COMP_vect)
      be0:	8f 7e       	andi	r24, 0xEF	; 239
      be2:	80 83       	st	Z, r24
 				buz_toggle_cnt = 0;
-     be4:	10 92 11 02 	sts	0x0211, r1	; 0x800211 <buz_toggle_cnt+0x1>
-     be8:	10 92 10 02 	sts	0x0210, r1	; 0x800210 <buz_toggle_cnt>
+     be4:	10 92 91 02 	sts	0x0291, r1	; 0x800291 <buz_toggle_cnt+0x1>
+     be8:	10 92 90 02 	sts	0x0290, r1	; 0x800290 <buz_toggle_cnt>
      bec:	0e c0       	rjmp	.+28     	; 0xc0a <__vector_9+0x112>
 			}
 			break;
 
 			case 3: // OFF_LONG (600ms)
 			if (buz_phase_cnt >= MS_TO_TICKS(600)) {
-     bee:	80 91 0c 02 	lds	r24, 0x020C	; 0x80020c <buz_phase_cnt>
-     bf2:	90 91 0d 02 	lds	r25, 0x020D	; 0x80020d <buz_phase_cnt+0x1>
+     bee:	80 91 8c 02 	lds	r24, 0x028C	; 0x80028c <buz_phase_cnt>
+     bf2:	90 91 8d 02 	lds	r25, 0x028D	; 0x80028d <buz_phase_cnt+0x1>
      bf6:	80 37       	cpi	r24, 0x70	; 112
      bf8:	97 41       	sbci	r25, 0x17	; 23
      bfa:	08 f1       	brcs	.+66     	; 0xc3e <__vector_9+0x146>
 				warn_step = 0;
-     bfc:	10 92 0b 02 	sts	0x020B, r1	; 0x80020b <warn_step>
+     bfc:	10 92 8b 02 	sts	0x028B, r1	; 0x80028b <warn_step>
 				buz_phase_cnt = 0;
-     c00:	10 92 0d 02 	sts	0x020D, r1	; 0x80020d <buz_phase_cnt+0x1>
-     c04:	10 92 0c 02 	sts	0x020C, r1	; 0x80020c <buz_phase_cnt>
+     c00:	10 92 8d 02 	sts	0x028D, r1	; 0x80028d <buz_phase_cnt+0x1>
+     c04:	10 92 8c 02 	sts	0x028C, r1	; 0x80028c <buz_phase_cnt>
      c08:	1a c0       	rjmp	.+52     	; 0xc3e <__vector_9+0x146>
 			return;
 		}
@@ -2158,19 +2158,19 @@ ISR(TIMER2_COMP_vect)
 
 	/* ===== 주파수 토글 (WARNING ON 구간 + DANGER 연속) ===== */
 	if (++buz_toggle_cnt >= buz_half_ticks) {
-     c0a:	80 91 10 02 	lds	r24, 0x0210	; 0x800210 <buz_toggle_cnt>
-     c0e:	90 91 11 02 	lds	r25, 0x0211	; 0x800211 <buz_toggle_cnt+0x1>
+     c0a:	80 91 90 02 	lds	r24, 0x0290	; 0x800290 <buz_toggle_cnt>
+     c0e:	90 91 91 02 	lds	r25, 0x0291	; 0x800291 <buz_toggle_cnt+0x1>
      c12:	01 96       	adiw	r24, 0x01	; 1
-     c14:	90 93 11 02 	sts	0x0211, r25	; 0x800211 <buz_toggle_cnt+0x1>
-     c18:	80 93 10 02 	sts	0x0210, r24	; 0x800210 <buz_toggle_cnt>
-     c1c:	20 91 12 02 	lds	r18, 0x0212	; 0x800212 <buz_half_ticks>
-     c20:	30 91 13 02 	lds	r19, 0x0213	; 0x800213 <buz_half_ticks+0x1>
+     c14:	90 93 91 02 	sts	0x0291, r25	; 0x800291 <buz_toggle_cnt+0x1>
+     c18:	80 93 90 02 	sts	0x0290, r24	; 0x800290 <buz_toggle_cnt>
+     c1c:	20 91 92 02 	lds	r18, 0x0292	; 0x800292 <buz_half_ticks>
+     c20:	30 91 93 02 	lds	r19, 0x0293	; 0x800293 <buz_half_ticks+0x1>
      c24:	82 17       	cp	r24, r18
      c26:	93 07       	cpc	r25, r19
      c28:	50 f0       	brcs	.+20     	; 0xc3e <__vector_9+0x146>
 		buz_toggle_cnt = 0;
-     c2a:	10 92 11 02 	sts	0x0211, r1	; 0x800211 <buz_toggle_cnt+0x1>
-     c2e:	10 92 10 02 	sts	0x0210, r1	; 0x800210 <buz_toggle_cnt>
+     c2a:	10 92 91 02 	sts	0x0291, r1	; 0x800291 <buz_toggle_cnt+0x1>
+     c2e:	10 92 90 02 	sts	0x0290, r1	; 0x800290 <buz_toggle_cnt>
 		PORTG ^= _BV(BUZZ_PIN_BIT);
      c32:	e5 e6       	ldi	r30, 0x65	; 101
      c34:	f0 e0       	ldi	r31, 0x00	; 0
@@ -2789,8 +2789,8 @@ static inline void LCD_Str(const char *str)
      ee0:	80 ee       	ldi	r24, 0xE0	; 224
      ee2:	6c da       	rcall	.-2856   	; 0x3bc <startRanging>
 	ti_Cnt_1ms=0;
-     ee4:	10 92 1f 02 	sts	0x021F, r1	; 0x80021f <ti_Cnt_1ms+0x1>
-     ee8:	10 92 1e 02 	sts	0x021E, r1	; 0x80021e <ti_Cnt_1ms>
+     ee4:	10 92 9f 02 	sts	0x029F, r1	; 0x80029f <ti_Cnt_1ms+0x1>
+     ee8:	10 92 9e 02 	sts	0x029E, r1	; 0x80029e <ti_Cnt_1ms>
 	
 	
 	sei();
@@ -2804,7 +2804,7 @@ static inline void LCD_Str(const char *str)
      ef6:	7f 4f       	sbci	r23, 0xFF	; 255
      ef8:	88 ec       	ldi	r24, 0xC8	; 200
      efa:	3a db       	rcall	.-2444   	; 0x570 <motor_drive>
-     efc:	80 91 0a 02 	lds	r24, 0x020A	; 0x80020a <sub_ota_active>
+     efc:	80 91 8a 02 	lds	r24, 0x028A	; 0x80028a <sub_ota_active>
 	while (1)
 	{
 		
@@ -3161,7 +3161,7 @@ static inline void LCD_Str(const char *str)
 		
 		if(rx_complete_flag){
     107a:	40 cf       	rjmp	.-384    	; 0xefc <main+0x28a>
-    107c:	80 91 14 02 	lds	r24, 0x0214	; 0x800214 <rx_complete_flag>
+    107c:	80 91 94 02 	lds	r24, 0x0294	; 0x800294 <rx_complete_flag>
 			main_rx_cmd_uart0(&motor_flag, &fcw_state);
     1080:	88 23       	and	r24, r24
     1082:	51 f0       	breq	.+20     	; 0x1098 <__DATA_REGION_LENGTH__+0x98>
@@ -3175,7 +3175,7 @@ static inline void LCD_Str(const char *str)
     1090:	8d a5       	ldd	r24, Y+45	; 0x2d
 			rx_complete_flag=false;
     1092:	94 db       	rcall	.-2264   	; 0x7bc <buzzer_player>
-    1094:	10 92 14 02 	sts	0x0214, r1	; 0x800214 <rx_complete_flag>
+    1094:	10 92 94 02 	sts	0x0294, r1	; 0x800294 <rx_complete_flag>
 		}
 		
 		motor_driection(BACKWARD);
@@ -3189,12 +3189,12 @@ static inline void LCD_Str(const char *str)
     10a4:	65 da       	rcall	.-2870   	; 0x570 <motor_drive>
 		
 		if(measure_ready==1){
-    10a6:	80 91 1b 02 	lds	r24, 0x021B	; 0x80021b <measure_ready>
+    10a6:	80 91 9b 02 	lds	r24, 0x029B	; 0x80029b <measure_ready>
     10aa:	81 30       	cpi	r24, 0x01	; 1
     10ac:	09 f0       	breq	.+2      	; 0x10b0 <__DATA_REGION_LENGTH__+0xb0>
     10ae:	26 cf       	rjmp	.-436    	; 0xefc <main+0x28a>
 			measure_ready=0;
-    10b0:	10 92 1b 02 	sts	0x021B, r1	; 0x80021b <measure_ready>
+    10b0:	10 92 9b 02 	sts	0x029B, r1	; 0x80029b <measure_ready>
 			
 			
 			res = getRange(Sonar_Addr, &Sonar_range);

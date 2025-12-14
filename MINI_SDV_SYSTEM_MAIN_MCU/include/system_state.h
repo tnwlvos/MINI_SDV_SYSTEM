@@ -17,7 +17,7 @@ typedef enum {
 	SUB_PROTO_OTA_TEXT
 } sub_proto_t;
 
-volatile sub_proto_t sub_proto_mode;
+extern volatile sub_proto_t sub_proto_mode;
 
 typedef enum{
 	MODE_AUTO = 0,

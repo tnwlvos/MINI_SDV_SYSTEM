@@ -7,6 +7,7 @@
 #include "system_state.h"
 
 SystemState sdv_sys;
+volatile sub_proto_t sub_proto_mode = SUB_PROTO_BINARY;  
 
 void SystemState_Init(void)
 {

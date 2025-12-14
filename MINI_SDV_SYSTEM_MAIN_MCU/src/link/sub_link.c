@@ -18,6 +18,7 @@ static volatile uint8_t tx_idx = 0;
 static char sub_tx_buf[192];
 static const char *sub_tx_ptr = NULL;
 static volatile uint8_t sub_tx_busy = 0;
+
 void SUB_Init(void){
 	HAL_USART0_Init(38400);
 	srf_idx=0;
@@ -71,7 +72,7 @@ void SUB_SendLine(const char *line)
 	sub_tx_ptr  = sub_tx_buf;
 	sub_tx_busy = 1;
 
-	sub_proto_mode = SUB_PROTO_OTA_TEXT;   // ★ 텍스트로 보낼 때는 모드 보장
+	sub_proto_mode = SUB_PROTO_OTA_TEXT;   //  텍스트로 보낼 때는 모드 보장
 	HAL_USART0_Enable_Tx_Int();
 }
 

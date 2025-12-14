@@ -494,7 +494,7 @@ END GROUP
                 0x00800186                _edata = .
                 0x00800186                PROVIDE (__data_end, .)
 
-.bss            0x00800186       0x9a
+.bss            0x00800186      0x11a
                 0x00800186                PROVIDE (__bss_start, .)
  *(.bss)
  *(.bss*)
@@ -503,48 +503,48 @@ END GROUP
  .bss.ota_line_ready
                 0x00800188        0x1 main.o
  .bss.ota_idx   0x00800189        0x1 main.o
- .bss.ota_line  0x0080018a       0x80 main.o
+ .bss.ota_line  0x0080018a      0x100 main.o
  .bss.sub_ota_active
-                0x0080020a        0x1 main.o
-                0x0080020a                sub_ota_active
+                0x0080028a        0x1 main.o
+                0x0080028a                sub_ota_active
  .bss.warn_step
-                0x0080020b        0x1 main.o
+                0x0080028b        0x1 main.o
  .bss.buz_phase_cnt
-                0x0080020c        0x2 main.o
+                0x0080028c        0x2 main.o
  .bss.buz_pattern
-                0x0080020e        0x1 main.o
+                0x0080028e        0x1 main.o
  .bss.buz_enable
-                0x0080020f        0x1 main.o
+                0x0080028f        0x1 main.o
  .bss.buz_toggle_cnt
-                0x00800210        0x2 main.o
+                0x00800290        0x2 main.o
  .bss.buz_half_ticks
-                0x00800212        0x2 main.o
+                0x00800292        0x2 main.o
  .bss.rx_complete_flag
-                0x00800214        0x1 main.o
-                0x00800214                rx_complete_flag
+                0x00800294        0x1 main.o
+                0x00800294                rx_complete_flag
  .bss.fcw_state_buf
-                0x00800215        0x1 main.o
+                0x00800295        0x1 main.o
  .bss.speedflag_buf
-                0x00800216        0x1 main.o
- .bss.rx_idx    0x00800217        0x1 main.o
-                0x00800217                rx_idx
+                0x00800296        0x1 main.o
+ .bss.rx_idx    0x00800297        0x1 main.o
+                0x00800297                rx_idx
  .bss.srf_buf_idx
-                0x00800218        0x1 main.o
- .bss.srf_buf   0x00800219        0x2 main.o
+                0x00800298        0x1 main.o
+ .bss.srf_buf   0x00800299        0x2 main.o
  *(COMMON)
- COMMON         0x0080021b        0x5 main.o
-                0x0080021b                measure_ready
-                0x0080021c                rx_buf
-                0x0080021e                ti_Cnt_1ms
-                0x00800220                PROVIDE (__bss_end, .)
+ COMMON         0x0080029b        0x5 main.o
+                0x0080029b                measure_ready
+                0x0080029c                rx_buf
+                0x0080029e                ti_Cnt_1ms
+                0x008002a0                PROVIDE (__bss_end, .)
                 0x00001874                __data_load_start = LOADADDR (.data)
                 0x000018fa                __data_load_end = (__data_load_start + SIZEOF (.data))
 
-.noinit         0x00800220        0x0
+.noinit         0x008002a0        0x0
                 [!provide]                PROVIDE (__noinit_start, .)
  *(.noinit*)
                 [!provide]                PROVIDE (__noinit_end, .)
-                0x00800220                _end = .
+                0x008002a0                _end = .
                 [!provide]                PROVIDE (__heap_start, .)
 
 .eeprom         0x00810000        0x0
