@@ -12,6 +12,7 @@
 #include "fcw_logic.h"
 #include "sub_link.h"
 #include "ota_bridge.h"
+#include "parameter.h"
 #include <string.h>
 static char rx_line[256];
 static uint8_t rx_idx = 0;
@@ -40,7 +41,7 @@ static uint8_t is_hex_char(char c){
 static uint8_t validate_ihex_line(const char *p){
 	if (!p || p[0] != ':') return 0;
 	size_t L = strlen(p);
-	if (L < 11) return 0;        // 최소 레코드 길이
+	if (L < 2) return 0;        // 최소 레코드 길이
 	if (L > 96) return 0;        // 너 시스템에서 상한(128보다 작게)
 	for (size_t i=1;i<L;i++){
 		if (!is_hex_char(p[i])) return 0;
@@ -75,10 +76,10 @@ void PC_ProcessRx(void)
 	}
 	else if (rx_line[0] == ':') {
 		 //  "OTA:DATA:" 없이 순수 HEX 라인
-		 if (sdv_sys.ota_active && sdv_sys.ota_target == OTA_TARGET_SUB) {
+		 if (sdv_sys.ota_active) {
 			 OTA_Bridge_Data(rx_line);
 			 } 
-		else {
+		else{
 			 PC_SendLine("OTA:NAK:NOT_IN_SUB_OTA");
 		 }
 	 }

@@ -172,6 +172,9 @@
     <Compile Include="include\ota_bridge.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="include\parameter.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="include\pc_link.h">
       <SubType>compile</SubType>
     </Compile>
@@ -212,6 +215,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ota\ota_bridge.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\parameter.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\system_state.c">

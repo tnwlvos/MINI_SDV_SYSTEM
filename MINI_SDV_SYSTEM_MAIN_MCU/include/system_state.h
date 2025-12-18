@@ -10,7 +10,7 @@
 #define SYSTEM_STATE_H_
 
 #include <stdint.h>
-#include<stdbool.h>
+#include <stdbool.h>
 
 typedef enum {
 	SUB_PROTO_BINARY = 0,
@@ -51,6 +51,8 @@ typedef enum {
 	OTA_TARGET_SUB
 } OtaTarget;
 
+
+
 typedef struct{
 	ControlMode mode;
 	MotorCmd motor_cmd;
@@ -65,6 +67,7 @@ typedef struct{
 	bool distance_flag;	//새 거리값 들어왔는지 확인용 플래그
 	bool pc_connect;	// PC 링크 감지용
 	bool ota_active;	//ota 진행 중 여부
+
 	OtaTarget ota_target; 
 
 } SystemState;

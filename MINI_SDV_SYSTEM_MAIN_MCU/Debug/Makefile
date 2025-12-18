@@ -52,6 +52,7 @@ C_SRCS +=  \
 ../src/link/sub_link.c \
 ../src/main.c \
 ../src/ota/ota_bridge.c \
+../src/parameter.c \
 ../src/system_state.c
 
 
@@ -71,6 +72,7 @@ src/link/pc_link.o \
 src/link/sub_link.o \
 src/main.o \
 src/ota/ota_bridge.o \
+src/parameter.o \
 src/system_state.o
 
 OBJS_AS_ARGS +=  \
@@ -83,6 +85,7 @@ src/link/pc_link.o \
 src/link/sub_link.o \
 src/main.o \
 src/ota/ota_bridge.o \
+src/parameter.o \
 src/system_state.o
 
 C_DEPS +=  \
@@ -95,6 +98,7 @@ src/link/pc_link.d \
 src/link/sub_link.d \
 src/main.d \
 src/ota/ota_bridge.d \
+src/parameter.d \
 src/system_state.d
 
 C_DEPS_AS_ARGS +=  \
@@ -107,6 +111,7 @@ src/link/pc_link.d \
 src/link/sub_link.d \
 src/main.d \
 src/ota/ota_bridge.d \
+src/parameter.d \
 src/system_state.d
 
 OUTPUT_FILE_PATH +=MINI_SDV_SYSTEM_MAIN_MCU.elf
@@ -180,6 +185,13 @@ src/main.o: ../src/main.c
 	
 
 src/ota/ota_bridge.o: ../src/ota/ota_bridge.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include" -I"../include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega128 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega128" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+src/parameter.o: ../src/parameter.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include" -I"../include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -mrelax -g2 -Wall -mmcu=atmega128 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega128" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

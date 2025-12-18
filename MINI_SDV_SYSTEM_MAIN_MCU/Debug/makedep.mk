@@ -20,5 +20,7 @@ src\main.c
 
 src\ota\ota_bridge.c
 
+src\parameter.c
+
 src\system_state.c
 

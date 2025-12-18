@@ -17,7 +17,7 @@ src/link/pc_link.d src/link/pc_link.o: ../src/link/pc_link.c \
  ../include/pc_link.h ../include/system_state.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\gcc\avr\5.4.0\include\stdbool.h \
  ../include/hal_uart.h ../include/fcw_logic.h ../include/sub_link.h \
- ../include/ota_bridge.h \
+ ../include/ota_bridge.h ../include/parameter.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\string.h
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\io.h:
@@ -63,5 +63,7 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\
 ../include/sub_link.h:
 
 ../include/ota_bridge.h:
+
+../include/parameter.h:
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\string.h:

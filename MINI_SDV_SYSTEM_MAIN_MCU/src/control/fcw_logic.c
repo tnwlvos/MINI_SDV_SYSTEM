@@ -13,9 +13,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "parameter.h"
 #include "lcd_gcc.h"
 #define DANGER_RELEASE_CNT 8
-#define SENSOR_OFFSET_CM 11.5f
+#define SENSOR_OFFSET_CM 11.0f
 
 void corrected_distance()
 {
@@ -39,19 +40,19 @@ void fcw_update(void){
 			danger_cnt--;
 			return;
 		}
-		//위험 상태에서 탈출 조건의 ttc는 좀더 여유를 줌
-		 if(ttc < 1.2f && ttc > 0){
+	
+		 if(ttc < parameter.ttc_danger && ttc > 0){
 			   return;
 		   }
 		
 	}
-	if (ttc<1.5 &&  ttc>0)
+	if (ttc < parameter.ttc_danger &&  ttc>0)
 	{
 		sdv_sys.fcw_state=FCW_DANGER;
 		danger_cnt=DANGER_RELEASE_CNT;
 		return;
 	}
-	if(ttc<5.0){
+	if(ttc < parameter.ttc_warning){
 		sdv_sys.fcw_state=FCW_WARNING;
 	}
 	else

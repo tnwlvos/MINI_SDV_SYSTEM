@@ -9,10 +9,11 @@
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
-#include <util/delay.h>
+
 #include <avr/interrupt.h>
 #include <string.h>
-
+#include <stdio.h>
+#include "parameter.h"
 #include "ota_bridge.h"
 #include "system_state.h"
 #include "pc_link.h"
@@ -21,12 +22,7 @@
 #define EE_OTA_REQ_ADDR ((uint8_t*)0)
 #define OTA_REQ_MAGIC  0xA5
 
-static void system_reset_to_bootloader(void)
-{
-	cli();
-	wdt_enable(WDTO_15MS);
-	while (1) { }
-}
+
 
 void OTA_Bridge_Init(void)
 {
@@ -40,16 +36,10 @@ void OTA_Bridge_Begin(OtaTarget target){
 	
 	if(target == OTA_TARGET_MAIN){
 		eeprom_update_byte(EE_OTA_REQ_ADDR, OTA_REQ_MAGIC);
-
 		// 2) ACK 찍고
 		PC_SendLine("OTA:ACK:BEGIN:MAIN");
-
-		// 3) 잠깐 대기(PC가 ACK 받을 시간)
-		_delay_ms(50);
-
-		// 4) 리셋 -> BOOTRST=ON이면 부트로더로 진입
-		wdt_enable(WDTO_15MS);
-		while(1);
+		Send_parameter();//PC에게 사용자가 변환할 수 있는 현재 파라미터 값 제공
+		
 	}
 	else if (target == OTA_TARGET_SUB){
 		PC_SendLine("OTA:ACK:BEGIN:SUB");
@@ -59,7 +49,9 @@ void OTA_Bridge_Begin(OtaTarget target){
 }
 void OTA_Bridge_Data(const char *line)
 {
-	
+	char key[32];
+	int  val;
+	float fval;
 	if(!sdv_sys.ota_active) return;
 	
 	if (sdv_sys.ota_target == OTA_TARGET_SUB) {
@@ -68,7 +60,14 @@ void OTA_Bridge_Data(const char *line)
 		PC_SendLine("OTA:ACK:DATA:SUB");
 		} 
 	else if (sdv_sys.ota_target == OTA_TARGET_MAIN) {
-		// TODO: MAIN 플래시 기록 큐에 저장 (다음 단계)
+		sscanf(line,":PARAM:%31[^:]:%d",key,&val);
+		if (strcmp(key, "TTC_DANGER") == 0 || strcmp(key, "TTC_WARNING") == 0) {
+			fval = val / 10.0f;
+		}
+		else
+			fval=(float)val;
+		Parameter_Update(key,fval);
+		
 		
 	}
 }	
@@ -77,6 +76,8 @@ void OTA_Bridge_End(void)
 	sdv_sys.ota_active = false;
 	sdv_sys.ota_target = OTA_IDLE;
 	sub_proto_mode = SUB_PROTO_BINARY;
+
+	Parameter_SaveIfChange();   // ✅ 변경된 경우에만 EEPROM에 저장
+
 	PC_SendLine("OTA:ACK:END");
-	
 }

@@ -5,10 +5,9 @@
  *  Author: LEESANGHUN
  */ 
 #include "control_logic.h"
+#include "parameter.h"
 
-#define D_CAUTION   30   // cm
-#define D_EMERGENCY 15   // cm
-#define SAFE_CNT 15 //1.5sec
+
 void Control_Init()
 {
 	
@@ -18,11 +17,11 @@ void Control_UpdateFromDistance(void)
 {
 	uint16_t d= sdv_sys.distance_cm;
 	
-	if(d<=D_EMERGENCY)
+	if(d<=parameter.D_Emergency)
 	{
 		sdv_sys.motor_cmd=MOTOR_STOP;		
 	}
-	else if(d<=D_CAUTION)
+	else if(d<=parameter.D_caution)
 	{
 		sdv_sys.motor_cmd=SPEED_DOWN;
 	}
@@ -66,7 +65,7 @@ void Control_UpdateFromFCW(void)
 	else if(state== FCW_SAFE)
 	{
 		if(!restarted){
-			if(safe_cnt < SAFE_CNT){
+			if(safe_cnt < parameter.Safe_Cnt){
 				safe_cnt++;
 				sdv_sys.motor_cmd = MOTOR_STOP; // 기다리는 동안 정지 유지
 			}

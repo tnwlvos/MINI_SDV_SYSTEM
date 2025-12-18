@@ -21,6 +21,7 @@
 #include "ota_bridge.h"
 #include "fcw_logic.h"
 #include "hal_lcd.h"
+#include "parameter.h"
 //================파라미터 설정===================
 
 #define LCD_UPDATE_CNT 10
@@ -42,6 +43,7 @@ int main(void)
 {
 	disable_jtag();
 	SystemState_Init();
+	Parameter_Init();
 	LCD_Init();
 	SUB_Init();
 	PC_Init();
@@ -89,7 +91,7 @@ int main(void)
 					sprintf(v_msg, "Speed: %d cm/s   ",(unsigned int)sdv_sys.speed_cms);
 					LCD_Str(v_msg);
 					LCD_Pos(1,0);
-					sprintf(msg, "TTC:TTC:%2u.%1u s   ",(unsigned)(ttc10/10), (unsigned)(ttc10%10));
+					sprintf(msg, "TTC:%2u.%1u s   ",(unsigned)(ttc10/10), (unsigned)(ttc10%10));
 					LCD_Str(msg);
 					
 				}
