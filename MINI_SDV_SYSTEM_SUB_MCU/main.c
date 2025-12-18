@@ -20,7 +20,8 @@
 #include "lcd_gcc.h"
 #include "usart_gcc.h"
 #include "srf02_utils.h"
-
+#include <avr/eeprom.h>
+#include <util/atomic.h>
 
 
 //================파라미터 설정===================
@@ -36,15 +37,16 @@
 #define FCW_DANGER   2
 #define FCW_ERROR    3
 
-//motor_dir flag
-#define FORWARD 0
-#define BACKWARD 1
-//motor speed 
-#define MOTOR_SPEED_basic 200
-#define MOTOR_SPEED_decrease 150
+typedef enum { FORWARD=0, BACKWARD } MotorDir;
+	
+typedef struct __attribute__((packed)) {
+	uint16_t motor_speed_basic;     // 예: 200
+	uint16_t motor_speed_decrease;  // 예: 150
+	MotorDir  dir_flag;              // MotorDir
+} Parameter_Sub;
 
-
-
+Parameter_Sub sub_param;                 //  전역 변수(실체)
+volatile uint8_t sub_param_change = 0;   //  변경 플래그
 
 #define IN1_A   PD4
 #define IN2_A   PD5
@@ -63,6 +65,16 @@
 
 #define BUZ_TICK_HZ    10000UL
 #define MS_TO_TICKS(ms) ((uint32_t)(ms) * (BUZ_TICK_HZ/1000UL))
+
+
+
+#define EE_SUB_PARAM_MAGIC_ADDR ((uint8_t*)0x10)
+#define EE_SUB_PARAM_VER_ADDR   ((uint8_t*)0x11)
+#define EE_SUB_PARAM_DATA_ADDR  ((uint8_t*)0x12)
+
+#define EE_SUB_PARAM_MAGIC      0x6B
+#define EE_SUB_PARAM_VER        0x01
+
 //==============전역변수============
 volatile uint16_t ti_Cnt_1ms;
 volatile unsigned char measure_ready;
@@ -98,9 +110,16 @@ static volatile uint8_t  warn_step = 0;     // 0:ON1,1:OFF1,2:ON2,3:OFF_LONG
 //ota
 volatile uint8_t sub_ota_active = 0;
 
-static volatile char ota_line[256];
+static char ota_line[256];
 static volatile uint8_t ota_idx = 0;
 static volatile uint8_t ota_line_ready = 0;
+
+static uint8_t ota_close_state=0;
+
+static char sub_tx_line[128];
+static uint8_t sub_tx_idx = 0;
+static uint8_t sub_tx_len = 0;
+
 /* ================= UART1 ================= */
 static void usart0_init(void){
 	const uint16_t ubrr = (F_CPU/(16UL*BAUD)) - 1;
@@ -159,7 +178,49 @@ static uint16_t buz_calc_half_ticks(uint16_t freq_hz)
 
 
 
+static void SubParam_SetDefault(void)
+{
+	sub_param.motor_speed_basic    = 200;
+	sub_param.motor_speed_decrease = 150;
+	sub_param.dir_flag             = FORWARD;
+	sub_param_change = 0;
+}
 
+void SubParam_Init(void)
+{
+	uint8_t magic = eeprom_read_byte(EE_SUB_PARAM_MAGIC_ADDR);
+	uint8_t ver   = eeprom_read_byte(EE_SUB_PARAM_VER_ADDR);
+
+	if (magic != EE_SUB_PARAM_MAGIC || ver != EE_SUB_PARAM_VER) {
+		SubParam_SetDefault();
+		sub_param_change = 1;
+		return;
+	}
+
+	eeprom_read_block(&sub_param, EE_SUB_PARAM_DATA_ADDR, sizeof(Parameter_Sub));
+	sub_param_change = 0;
+}
+
+void SubParam_SaveNow(void)
+{
+	Parameter_Sub snap;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		snap = sub_param;
+	}
+
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		eeprom_update_byte(EE_SUB_PARAM_MAGIC_ADDR, EE_SUB_PARAM_MAGIC);
+		eeprom_update_byte(EE_SUB_PARAM_VER_ADDR, EE_SUB_PARAM_VER);
+		eeprom_update_block(&snap, EE_SUB_PARAM_DATA_ADDR, sizeof(Parameter_Sub));
+		sub_param_change = 0;
+	}
+}
+
+void SubParam_SaveIfChange(void)
+{
+	if (!sub_param_change) return;
+	SubParam_SaveNow();
+}
 
 
 void motor_speed_set(uint8_t speed){
@@ -258,12 +319,12 @@ void motor_driection(uint8_t dir_flag){
 //서브 모터 구동
 void motor_drive(uint8_t flag, uint8_t *speed){
 	if (flag==SPEED_UP){
-		*speed=MOTOR_SPEED_basic;
+		*speed=(uint8_t)sub_param.motor_speed_basic;
 		motor_speed_set(*speed);
 		
 	}
 	else if (flag==SPEED_DOWN){
-		*speed=MOTOR_SPEED_decrease;
+		*speed=(uint8_t)sub_param.motor_speed_decrease;
 		motor_speed_set(*speed);
 		
 	}
@@ -347,19 +408,107 @@ void buzzer_player(uint8_t state)
 	}
 }
 
+//==================================OTA==================================
+
+void Main_SendLine(const char *msg)
+{
+	while (sub_tx_len != 0) { /* wait until previous send done */ }
+	sub_tx_len = snprintf(sub_tx_line, sizeof(sub_tx_line), "%s\n", msg);
+	sub_tx_idx = 0;
+	
+	UCSR0B |= (1<<UDRIE0);
+}
+
+
+void Sub_Send_parameter(){
+	char para_buf[128];
+
+	snprintf(para_buf, sizeof(para_buf),
+	"MOTOR_SPEED_BASIC:%3d;MOTOR_SPEED_DECREASE:%3d;MOTOR_DIR:%u",
+	sub_param.motor_speed_basic,
+	sub_param.motor_speed_decrease,
+	(unsigned)sub_param.dir_flag);
+
+	Main_SendLine(para_buf);
+}
+
+void SUB_Parameter_Update(const char* key, uint16_t val){
+	
+	if (strcmp(key, "MOTOR_SPEED_BASIC") == 0)
+	{
+		if (val > 0 && val < 250)
+		sub_param.motor_speed_basic = val;
+		sub_param_change=1;
+		Main_SendLine("OTA:SUB:ACK:PARAM");
+		Sub_Send_parameter();
+		return;
+	}
+	else if (strcmp(key, "MOTOR_SPEED_DECREASE") == 0)
+	{
+		if (val > 0 && val < 250)
+		sub_param.motor_speed_decrease= val;
+		sub_param_change=1;
+		Main_SendLine("OTA:SUB:ACK:PARAM");
+		Sub_Send_parameter();
+		return;
+	}
+	else if (strcmp(key, "MOTOR_DIR") == 0)
+	{
+		if (val>0 && val<2)
+		sub_param.dir_flag = (uint8_t)val;
+		sub_param_change=1;
+		Main_SendLine("OTA:SUB:ACK:PARAM");
+		Sub_Send_parameter();
+		return;
+	}
+
+	Main_SendLine("OTA:SUB:NACK:PARAM");
+	
+}
+
+void Parameter_change(){
+	char key[32];
+	int  val;
+	
+	
+	if(!sub_ota_active) return;
+	
+	int r=sscanf(ota_line,":PARAM:%31[^:]:%d",key,&val);
+	if (r != 2) {
+		Main_SendLine("OTA:SUB:NAK:PARAM_FORMAT");  // 바로 보이게
+		return;
+	}
+	
+	SUB_Parameter_Update(key,(uint16_t)val);
+}
 
 /*===============MAIN_MCU와 송수신==========*/
 //uart0 데이터 전송 인터럽트
 ISR(USART0_UDRE_vect){
-	//하위 부터전송
-	UDR0=srf_buf[srf_buf_idx++];
 	
-	if(srf_buf_idx>=2){
-		UCSR0B &= ~(1<<UDRIE0);
-		srf_buf_idx=0;
+	if(sub_ota_active){
+		UDR0=sub_tx_line[sub_tx_idx++];
+		
+		if(sub_tx_idx>=sub_tx_len){
+			UCSR0B &= ~(1<<UDRIE0);
+			sub_tx_idx=0;
+			sub_tx_len = 0; 
+		}
+		
+		
 	}
 	
+	else if(!sub_ota_active){
+		//하위 부터전송
+		UDR0=srf_buf[srf_buf_idx++];
 	
+		if(srf_buf_idx>=2){
+			UCSR0B &= ~(1<<UDRIE0);
+			srf_buf_idx=0;
+		}
+	
+	
+	}
 }
 
 //uart0 데이터 수신 인터럽트
@@ -376,11 +525,30 @@ ISR(USART0_RX_vect){
 
 	 // ===== OTA 모드면: ASCII 라인 수신 =====
 	 if (sub_ota_active) {
+		 
+		 if (d == 0xFA) {
+			 if (ota_close_state == 0) ota_close_state = 1;
+			 else {
+				 // 연속 2개 확인
+				 sub_ota_active = 0;
+				 ota_idx = 0;
+				 ota_line_ready = 0;
+				 sub_tx_idx = 0;
+				 sub_tx_len = 0;          //  안전하게 초기화
+				 UCSR0B &= ~(1<<UDRIE0);  //  TX 인터럽트 끄기
+				 SubParam_SaveIfChange(); 
+				 return;
+			 }
+		 } 
+		 else {
+			ota_close_state = 0; // 연속성 깨지면 리셋
+		 }
 		 if (d == '\n') {
 			 ota_line[ota_idx] = '\0';
 			 ota_line_ready = 1;
 			 ota_idx = 0;
-			 } else {
+			 } 
+		 else {
 			 if (ota_idx < sizeof(ota_line)-1) ota_line[ota_idx++] = (char)d;
 		 }
 		 return;
@@ -389,7 +557,7 @@ ISR(USART0_RX_vect){
 	 // ===== 평소 모드: 2바이트 motor/fcw =====
 	 rx_buf[rx_idx++] = d;
 	 if (rx_idx >= 2) {
-		 // ★ 토큰(0xFF,0xFF) 오면 OTA 모드 진입
+		 //  토큰(0xFF,0xFF) 오면 OTA 모드 진입
 		 if (rx_buf[0] == 0xFF && rx_buf[1] == 0xFF) {
 			 sub_ota_active = 1;
 			 rx_idx = 0;
@@ -401,6 +569,7 @@ ISR(USART0_RX_vect){
 			 LCD_Str("OTA MODE");
 			 LCD_Pos(1,0);
 			 LCD_Str("WAIT DATA...");
+			 Sub_Send_parameter();
 			 return;
 		 }
 
@@ -489,7 +658,8 @@ void disable_jtag()
 int main(void)
 {
 	disable_jtag();
-	uint8_t speed=MOTOR_SPEED_basic;
+	SubParam_Init();
+	uint8_t speed=(uint8_t)sub_param.motor_speed_basic; 
 	usart0_init();
 	LCD_Init();
 	Timer0_Init();
@@ -511,7 +681,6 @@ int main(void)
 	char Message[40];
 	unsigned int res=0;
 	uint8_t motor_flag=0;
-	uint8_t motor_dir_flag=FORWARD;
 	uint8_t fcw_state=0;
 
 
@@ -527,8 +696,8 @@ int main(void)
 	
 	
 	sei();
-	motor_driection(BACKWARD);
-	motor_drive(MOTOR_SPEED_basic, &speed);
+	motor_driection(sub_param.dir_flag);
+	motor_drive((uint8_t)sub_param.motor_speed_basic, &speed);
 	while (1)
 	{
 		
@@ -537,19 +706,7 @@ int main(void)
 			if (ota_line_ready) {
 				ota_line_ready = 0;
 
-				LCD_Clear();
-				LCD_Pos(0,0);
-				LCD_Str("OTA RX:");
-
-				LCD_Pos(1,0);
-				// 16x2 LCD라 2번째 줄에 16자까지만
-				char buf16[17];
-				for (uint8_t i=0; i<16; i++) {
-					char c = ota_line[i];
-					buf16[i] = (c == '\0') ? ' ' : c;
-				}
-				buf16[16] = '\0';
-				LCD_Str(buf16);
+				Parameter_change();
 				continue;
 			}
 			continue;
@@ -561,7 +718,7 @@ int main(void)
 			rx_complete_flag=false;
 		}
 		
-		motor_driection(BACKWARD);
+		motor_driection(sub_param.dir_flag);
 		motor_drive(motor_flag,&speed);
 		
 		if(measure_ready==1){

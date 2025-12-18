@@ -9,14 +9,27 @@
 #include "sub_link.h"
 #include "hal_uart.h"
 #include "lcd_gcc.h"
+#include "pc_link.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <util/atomic.h>
+static volatile char sub_ota_rx_buf[256];
+static volatile uint8_t sub_ota_rx_idx = 0;
+static volatile uint8_t sub_ota_rx_len =0;
+
+static volatile uint8_t sub_line_ready = 0;
+static char sub_line_to_pc[256];
+
 static volatile uint8_t srf_buf[2];
 static volatile uint8_t srf_idx = 0;
+
 static volatile uint8_t tx_buf[2];   // 보낼 motor_cmd
 static volatile uint8_t tx_idx = 0;
+
 static char sub_tx_buf[192];
 static const char *sub_tx_ptr = NULL;
+
 static volatile uint8_t sub_tx_busy = 0;
 
 void SUB_Init(void){
@@ -49,16 +62,41 @@ void SUB_TX_motorcmd()
 }
 
 void SUB_OnRxByte(uint8_t data){
-	srf_buf[srf_idx++]=data;
-	if(srf_idx>=2)
-	{
-		srf_idx=0;
-		sdv_sys.distance_cm=(srf_buf[1]<<8)|srf_buf[0];
-		sdv_sys.distance_flag=true;
-		
+	
+	if (sdv_sys.ota_target == OTA_TARGET_SUB) {
+
+		// CR 제거(윈도우)
+		if (data == '\r') return;
+
+		// 개행이면 한 줄 완성
+		if (data == '\n') {
+			sub_ota_rx_buf[sub_ota_rx_idx] = '\0';   //문자열 종료
+			snprintf(sub_line_to_pc, sizeof(sub_line_to_pc), "%s", (char*)sub_ota_rx_buf);
+			sub_line_ready = 1;
+			sub_ota_rx_idx = 0;
+			return;
+		}
+
+		// 버퍼 저장 (오버플로 방지)
+		if (sub_ota_rx_idx < sizeof(sub_ota_rx_buf) - 1) {
+			sub_ota_rx_buf[sub_ota_rx_idx++] = (char)data;
+			} 
+		else {
+			// 너무 길면 리셋(또는 NAK)
+			sub_ota_rx_idx = 0;
+			PC_SendLine("OTA:NAK:SUB_RX_OVERFLOW");
+		}
+		return;
+	}
+
+	// ===== 평상시: 거리값 2바이트 수신 =====
+	srf_buf[srf_idx++] = data;
+	if (srf_idx >= 2) {
+		srf_idx = 0;
+		sdv_sys.distance_cm = ((uint16_t)srf_buf[1] << 8) | srf_buf[0];
+		sdv_sys.distance_flag = true;
 	}
 }
-
 
 void SUB_SendLine(const char *line)
 {
@@ -98,6 +136,25 @@ void SUB_SendToken2(uint8_t a, uint8_t b)
 	HAL_USART0_Enable_Tx_Int();
 }
 
+uint8_t SUB_HasLineToPC(void)
+{
+	return sub_line_ready;
+}
+
+void SUB_PopLineToPC(char *out, uint16_t out_sz)
+{
+	if (!out || out_sz == 0) return;
+
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		if (!sub_line_ready) { out[0] = '\0'; return; }
+
+		strncpy(out, sub_line_to_pc, out_sz - 1);
+		out[out_sz - 1] = '\0';
+		sub_line_ready = 0;
+	}
+	
+}
+
 ISR(USART0_RX_vect)
 {
 	uint8_t data= UDR0;
@@ -112,6 +169,7 @@ ISR(USART0_UDRE_vect)
 		// 기존 2바이트 binary 전송
 		UDR0 = tx_buf[tx_idx++];
 		if (tx_idx >= 2) {
+			tx_idx = 0;
 			HAL_USART0_Disable_Tx_Int();
 		}
 	}

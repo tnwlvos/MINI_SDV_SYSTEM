@@ -108,25 +108,38 @@ void Parameter_Update(const char* key, float val){
 		if (val > 0.1f && val < 10.0f)
 			parameter.ttc_danger = val;
 		parameter_change=1;
+		PC_SendLine("OTA:ACK:PARAM");
+		Send_parameter();
+		return;
 	}
 	else if (strcmp(key, "TTC_WARNING") == 0)
 	{
 		if (val > 0.1f && val < 15.0f)
 			parameter.ttc_warning = val;
 		parameter_change=1;
+		PC_SendLine("OTA:ACK:PARAM");
+		Send_parameter();
+		return;
 	}
 	else if (strcmp(key, "D_CAUTION") == 0)
 	{
 		if (val >= 0 && val <= 500)
 			parameter.D_caution = (uint16_t)val;
 		parameter_change=1;
+		PC_SendLine("OTA:ACK:PARAM");
+		Send_parameter();
+		return;
 	}
 	else if (strcmp(key, "D_EMERGENCY") == 0)
 	{
 		if (val >= 0 && val <= 500)
 			parameter.D_Emergency = (uint16_t)val;
 		parameter_change=1;
+		PC_SendLine("OTA:ACK:PARAM");
+		Send_parameter();
+		return;
 	}
+	PC_SendLine("OTA:NACK:PARAM");
 	
 }
 

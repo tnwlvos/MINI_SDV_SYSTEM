@@ -26,6 +26,7 @@ void SUB_ONTxEmpty(void);
 void SUB_SendRawChar(uint8_t c);
 void SUB_SendLine(const char *line);
 void SUB_SendToken2(uint8_t a, uint8_t b);
-
+uint8_t SUB_HasLineToPC(void);
+void SUB_PopLineToPC(char *out, uint16_t out_sz);
 #endif /* SUB_LINK_H_ */
 

@@ -29,7 +29,7 @@
 static uint16_t lcd_cnt = 0;
 
 //=================함수 초기화===============
-
+OTA_Bridge_Process(void){}
 void disable_jtag()
 {
 	MCUCSR |= (1<<JTD);
@@ -38,7 +38,7 @@ void disable_jtag()
 
 
 
-void OTA_Bridge_Process(void) {}
+
 int main(void)
 {
 	disable_jtag();
@@ -62,7 +62,11 @@ int main(void)
 		
 		PC_ProcessRx();   
 		if (sdv_sys.ota_active) {	
-			OTA_Bridge_Process();
+			char line[256];
+			if (SUB_HasLineToPC()) {
+				SUB_PopLineToPC(line, sizeof(line));
+				if (line[0] != '\0') PC_SendLine(line);
+			}
 			_delay_ms(200);
 			continue;
 		}

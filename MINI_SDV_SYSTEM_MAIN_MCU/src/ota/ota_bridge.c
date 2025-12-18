@@ -44,7 +44,7 @@ void OTA_Bridge_Begin(OtaTarget target){
 	else if (target == OTA_TARGET_SUB){
 		PC_SendLine("OTA:ACK:BEGIN:SUB");
 		SUB_SendToken2(0xFF, 0xFF);
-		sub_proto_mode = SUB_PROTO_OTA_TEXT;
+		
 	}
 }
 void OTA_Bridge_Data(const char *line)
@@ -60,7 +60,11 @@ void OTA_Bridge_Data(const char *line)
 		PC_SendLine("OTA:ACK:DATA:SUB");
 		} 
 	else if (sdv_sys.ota_target == OTA_TARGET_MAIN) {
-		sscanf(line,":PARAM:%31[^:]:%d",key,&val);
+		int r=sscanf(line,":PARAM:%31[^:]:%d",key,&val);
+		if (r != 2) {
+			PC_SendLine("OTA:NAK:PARAM_FORMAT");  // 바로 보이게
+			return;
+		}
 		if (strcmp(key, "TTC_DANGER") == 0 || strcmp(key, "TTC_WARNING") == 0) {
 			fval = val / 10.0f;
 		}
@@ -74,10 +78,13 @@ void OTA_Bridge_Data(const char *line)
 void OTA_Bridge_End(void)
 {
 	sdv_sys.ota_active = false;
+	if(sdv_sys.ota_target== OTA_TARGET_SUB){
+		SUB_SendToken2(0xFA, 0xFA);
+	}
 	sdv_sys.ota_target = OTA_IDLE;
 	sub_proto_mode = SUB_PROTO_BINARY;
 
-	Parameter_SaveIfChange();   // ✅ 변경된 경우에만 EEPROM에 저장
+	Parameter_SaveIfChange();   //  변경된 경우에만 EEPROM에 저장
 
 	PC_SendLine("OTA:ACK:END");
 }
