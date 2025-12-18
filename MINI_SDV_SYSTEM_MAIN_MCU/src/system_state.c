@@ -25,5 +25,6 @@ void SystemState_Init(void)
 	sdv_sys.pc_connect=false;
 	sdv_sys.ota_active=false;
 	sdv_sys.ota_target = OTA_IDLE;
+	sdv_sys.sub_link_suspended=false; 
 	
 }

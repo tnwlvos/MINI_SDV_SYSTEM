@@ -15,7 +15,7 @@ typedef struct __attribute__((packed)){
 	float ttc_warning;
 	uint16_t D_caution;
 	uint16_t D_Emergency;
-	uint8_t Safe_Cnt;
+	
 
 }Parameter;
 

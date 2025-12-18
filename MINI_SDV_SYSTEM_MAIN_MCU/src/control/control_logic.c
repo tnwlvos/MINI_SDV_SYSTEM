@@ -65,7 +65,7 @@ void Control_UpdateFromFCW(void)
 	else if(state== FCW_SAFE)
 	{
 		if(!restarted){
-			if(safe_cnt < parameter.Safe_Cnt){
+			if(safe_cnt < 15){
 				safe_cnt++;
 				sdv_sys.motor_cmd = MOTOR_STOP; // 기다리는 동안 정지 유지
 			}

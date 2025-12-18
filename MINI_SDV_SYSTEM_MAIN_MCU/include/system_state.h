@@ -67,7 +67,7 @@ typedef struct{
 	bool distance_flag;	//새 거리값 들어왔는지 확인용 플래그
 	bool pc_connect;	// PC 링크 감지용
 	bool ota_active;	//ota 진행 중 여부
-
+	bool sub_link_suspended;
 	OtaTarget ota_target; 
 
 } SystemState;

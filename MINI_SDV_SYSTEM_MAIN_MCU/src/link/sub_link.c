@@ -41,7 +41,8 @@ void SUB_TX_motorcmd()
 {
 	static uint8_t last_fcw_state=FCW_SAFE;
 	static uint8_t init = 0;
-
+	if (sdv_sys.sub_link_suspended)
+	 return;
 	if (!init) {
 		last_fcw_state = sdv_sys.fcw_state;
 		sdv_sys.last_motor_cmd = sdv_sys.motor_cmd;
@@ -49,7 +50,7 @@ void SUB_TX_motorcmd()
 		
 	}
 
-	if((sdv_sys.motor_cmd != sdv_sys.last_motor_cmd) || sdv_sys.fcw_state !=last_fcw_state)
+	if((sdv_sys.motor_cmd != sdv_sys.last_motor_cmd) || sdv_sys.fcw_state !=last_fcw_state || sdv_sys.ota_active==1)
 	{
 		tx_buf[0]=(uint8_t)sdv_sys.motor_cmd;
 		tx_buf[1] =(uint8_t)sdv_sys.fcw_state;
@@ -60,7 +61,18 @@ void SUB_TX_motorcmd()
 	}
 	
 }
+void SUB_SendMotorCmdNow(uint8_t cmd, uint8_t fcw)
+{
+	if (sdv_sys.sub_link_suspended) return;
 
+	tx_buf[0] = cmd;
+	tx_buf[1] = fcw;
+	tx_idx = 0;
+	sub_proto_mode = SUB_PROTO_BINARY;
+	HAL_USART0_Enable_Tx_Int();
+
+	while (UCSR0B & (1<<UDRIE0)) { }  // 완료 대기(선택)
+}
 void SUB_OnRxByte(uint8_t data){
 	
 	if (sdv_sys.ota_target == OTA_TARGET_SUB) {
@@ -156,8 +168,11 @@ void SUB_PopLineToPC(char *out, uint16_t out_sz)
 }
 
 ISR(USART0_RX_vect)
-{
+{	
 	uint8_t data= UDR0;
+	 if (sdv_sys.sub_link_suspended)
+		return;
+	
 	SUB_OnRxByte(data);
 }
 ISR(USART0_UDRE_vect)

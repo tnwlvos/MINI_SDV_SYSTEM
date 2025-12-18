@@ -534,7 +534,8 @@ ISR(USART0_RX_vect){
 				 ota_idx = 0;
 				 ota_line_ready = 0;
 				 sub_tx_idx = 0;
-				 sub_tx_len = 0;          //  안전하게 초기화
+				 sub_tx_len = 0;
+				 buzzer_player(fcw_state_buf);           //  안전하게 초기화
 				 UCSR0B &= ~(1<<UDRIE0);  //  TX 인터럽트 끄기
 				 SubParam_SaveIfChange(); 
 				 return;
@@ -563,7 +564,10 @@ ISR(USART0_RX_vect){
 			 rx_idx = 0;
 			 ota_idx = 0;
 			 ota_line_ready = 0;
-
+			 buz_enable = 0;
+			 buz_pattern = 0;
+			 buz_half_ticks = 0;
+			 PORTG &= ~_BV(BUZZ_PIN_BIT);
 			 LCD_Clear();
 			 LCD_Pos(0,0);
 			 LCD_Str("OTA MODE");
@@ -703,6 +707,7 @@ int main(void)
 		
 		if (sub_ota_active)
 		{
+			motor_drive(MOTOR_STOP,&speed);
 			if (ota_line_ready) {
 				ota_line_ready = 0;
 
