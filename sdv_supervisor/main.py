@@ -11,10 +11,6 @@ def main():
     print("=== SDV Supervisor Started ===")
     print("[INFO] Opening serial port:",PORT)
     print("[INFO] Ready. Type commands to send to MCU.")
-    print("Commands:")
-    print("  ota main <hexfile>")
-    print("  ota sub  <hexfile>")
-    print("  (others are sent directly to MCU)")
     print("===============================")
     ser = SerialManager(PORT, BAUD, callback = on_serial_line)
 
